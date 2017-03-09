@@ -1,0 +1,6 @@
+*.npz
+*.clean
+*.cpyc
+*.pyc
+timer.dat
+build/
