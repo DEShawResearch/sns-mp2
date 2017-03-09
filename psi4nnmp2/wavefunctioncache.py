@@ -1,15 +1,12 @@
-import os
-import itertools
 import numpy as np
-import psi4
+from collections import namedtuple
 from psi4 import core
-import psi4.driver.p4util as p4util
 from psi4.driver.procrouting.proc import run_dfmp2, run_dfmp2_gradient
 from psi4.driver.procrouting.proc import scf_helper
 from psi4.driver.molutil import constants
 from psi4 import extras
-from decomp2 import EnergyDecomposition
-from collections import namedtuple
+import psi4.driver.p4util as p4util
+
 
 calcid = namedtuple('calcid', ('V', 'B', 'Z'))
 
@@ -232,153 +229,6 @@ class WavefunctionCache(object):
         return wfn
 
 
-
-def run_nnmp2(name, molecule, **kwargs):
-    # Force to c1
-    molecule = molecule.clone()
-    molecule.reset_point_group('c1')
-    molecule.fix_orientation(True)
-    molecule.fix_com(True)
-    molecule.update_geometry()
-
-    nfrag = molecule.nfragments()
-    if nfrag != 2:
-        raise ValidationError('NN-MP2 requires active molecule to have 2 fragments, not %s.' % (nfrag))
-
-    LOW = 'cc-pvdz'
-    HIGH = 'cc-pvdz'
-
-    # Run the 8 HF and MP2 calculations we need
-    c = WavefunctionCache(molecule, low=LOW, high=HIGH)
-    m1mhigh = c.compute('m1', 'm', 'high', mp2=True, mp2_dm=True) 
-    m2mhigh = c.compute('m2', 'm', 'high', mp2=True, mp2_dm=True) 
-    m1dlow  = c.compute('m1', 'd', 'low',  mp2=True) 
-    m2dlow  = c.compute('m2', 'd', 'low',  mp2=True) 
-    m1dhigh = c.compute('m1', 'd', 'high', mp2=True)
-    m2dhigh = c.compute('m2', 'd', 'high', mp2=True)
-    ddlow   = c.compute('d', 'd',  'low',  mp2=True)  
-    ddhigh  = c.compute('d', 'd',  'high', mp2=True) 
-
-    ###################################################################
-
-    def format_intene():
-        def interaction(field, basis):
-            d = c.wfn_cache[calcid('d', 'd', basis)]
-            m1 = c.wfn_cache[calcid('m1', 'd', basis)]
-            m2 = c.wfn_cache[calcid('m2', 'd', basis)]
-            return d.get_variable(field) - (m1.get_variable(field) + m2.get_variable(field))
-
-        return {
-            ('DF-MP2/%s CP Interaction Energy' % HIGH):               interaction('MP2 TOTAL ENERGY', basis='high'),
-            ('DF-HF/%s CP Interaction Energy' % HIGH):                interaction('SCF TOTAL ENERGY', basis='high'),
-            ('DF-MP2/%s CP Same-Spin Interaction Energy' % HIGH):     interaction('MP2 SAME-SPIN CORRELATION ENERGY', basis='high'),
-            ('DF-MP2/%s CP Opposite-Spin Interaction Energy' % HIGH): interaction('MP2 OPPOSITE-SPIN CORRELATION ENERGY', basis='high'),
-
-            ('DF-MP2/%s CP Interaction Energy' % LOW):                interaction('MP2 TOTAL ENERGY', basis='low'),
-            ('DF-HF/%s CP Interaction Energy' % LOW):                 interaction('SCF TOTAL ENERGY', basis='low'),
-            ('DF-MP2/%s CP Same-Spin Interaction Energy' % LOW):      interaction('MP2 SAME-SPIN CORRELATION ENERGY', basis='low'),
-            ('DF-MP2/%s CP Opposite-Spin Interaction Energy' % LOW):  interaction('MP2 OPPOSITE-SPIN CORRELATION ENERGY', basis='low'),
-        }
-
-    ###################################################################
-
-    def format_espx():
-        aux_basis = core.BasisSet.build(ddhigh.molecule(), "DF_BASIS_MP2",
-                                        HIGH+'-jkfit', "RIFIT", HIGH)
-        optstash = p4util.optproc.OptionsState(
-            ['DF_INTS_IO'],
-            ['SCF_TYPE']
-        )
-        core.set_global_option('SCF_TYPE', 'DF')
-        core.set_global_option('DF_INTS_IO', 'LOAD')
-
-        decomp = EnergyDecomposition(
-            m1_basis=m1mhigh.basisset(),
-            m2_basis=m2mhigh.basisset(),
-            dimer_basis=ddhigh.basisset(),
-            dimer_aux_basis=aux_basis)
-
-        esovlpfunc = decomp.esovlp()
-        eshf, ovlhf = esovlpfunc(m1mhigh.reference_wavefunction(), m2mhigh.reference_wavefunction())
-        esmp, ovlmp = esovlpfunc(m1mhigh, m2mhigh)
-
-        # release some memory
-        del esovlpfunc
-
-        hlfunc = decomp.hl()
-        hl = hlfunc(m1mhigh, m1mhigh)
-
-        optstash.restore()
-        return {
-            'DF-HF/{} Electrostatic Interaction Energy'.format(HIGH): eshf,
-            'DF-HF/{} Density Matrix Overlap'.format(HIGH): ovlhf,
-            'DF-MP2/{} Electrostatic Interaction Energy'.format(HIGH): esmp,
-            'DF-MP2{} Density Matrix Overlap'.format(HIGH): ovlmp,
-            '{} Heitler-London Energy'.format(HIGH): hl
-        }
-
-    ###################################################################
-
-    def format_sapt():
-        optstash = p4util.optproc.OptionsState(
-            ['SAPT', 'SAPT_LEVEL'],
-            ['SAPT', 'E_CONVERGENCE'],
-            ['SAPT', 'D_CONVERGENCE'],
-            ['DF_BASIS_SAPT'],
-            ['DF_BASIS_ELST'],
-            ['BASIS'],
-        )
-
-        core.set_local_option('SCF', 'SCF_TYPE', 'DF')
-        core.set_local_option('SAPT', 'SAPT_LEVEL', 'SAPT0')
-        core.set_local_option('SAPT', 'E_CONVERGENCE', 10e-10)
-        core.set_local_option('SAPT', 'D_CONVERGENCE', 10e-10)
-        core.set_global_option('BASIS', HIGH)
-        core.set_global_option('DF_BASIS_SAPT', HIGH + '-jkfit')
-
-        dimer_wfn = ddhigh.reference_wavefunction()
-        aux_basis = core.BasisSet.build(dimer_wfn.molecule(), "DF_BASIS_SAPT",
-                                        core.get_global_option("DF_BASIS_SAPT"),
-                                        "RIFIT", core.get_global_option("BASIS"))
-        dimer_wfn.set_basisset("DF_BASIS_SAPT", aux_basis)
-        dimer_wfn.set_basisset("DF_BASIS_ELST", aux_basis)
-        e_sapt = core.sapt(dimer_wfn, m1mhigh.reference_wavefunction(), m2mhigh.reference_wavefunction())
-
-        optstash.restore()
-        return {k: core.get_variable(k) for k in ('SAPT ELST10,R ENERGY', 'SAPT EXCH10 ENERGY',
-                'SAPT EXCH10(S^2) ENERGY', 'SAPT IND20,R ENERGY', 'SAPT EXCH-IND20,R ENERGY',
-                'SAPT EXCH-DISP20 ENERGY', 'SAPT DISP20 ENERGY', 'SAPT SAME-SPIN EXCH-DISP20 ENERGY',
-                'SAPT SAME-SPIN EXCH-DISP20 ENERGY', 'SAPT HF TOTAL ENERGY',
-        )}
-
-    ###################################################################
-
-    core.tstart()
-
-    # Run the three previously defined functions
-    espx_fields = format_espx()
-    intene_fields = format_intene()
-    sapt_fields = format_sapt()
-
-    # Format output
-    outlines = [
-        '',
-        '-' * 77,
-        '=' * 24 + ' DESRES ENERGY DECOMPOSITION ' + '=' * 24,
-        '-' * 77,
-    ]
-    for k, v in itertools.chain(
-            sorted(espx_fields.iteritems()),
-            sorted(intene_fields.iteritems()),
-            sorted(sapt_fields.iteritems())):
-        outlines.append('{:<52s} {:24.16f}'.format(k + ':', v))
-
-    outlines.extend(['-' * 77, ''])
-    core.print_out('\n'.join(outlines))
-
-    core.tstop()
-
-
 def dimerize(molecule, basis='monomer'):
     if basis == 'monomer':
         monomer1 = molecule.extract_subsets(1)
@@ -393,5 +243,3 @@ def dimerize(molecule, basis='monomer'):
 
     return monomer1, monomer2
 
-
-psi4.driver.procedures['energy']['nnmp2'] = run_nnmp2

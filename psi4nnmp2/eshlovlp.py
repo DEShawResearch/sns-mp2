@@ -2,6 +2,47 @@ from psi4 import core
 import numpy as np
 
 
+class ESHLOVLPDecomposition(object):
+    def __init__(self, m1_basis, m2_basis, dimer_basis, dimer_aux_basis):
+        self.dimer_basis = dimer_basis
+        self.dimer_aux_basis = dimer_aux_basis
+
+        self.dimer_V, self.dimer_T, self.dimer_S = self._initialize_mints(dimer_basis)
+        self.monomer1_V = self._initialize_mints(m1_basis, v_only=True)
+        self.monomer2_V = self._initialize_mints(m2_basis, v_only=True)
+
+        self.nuclear_interaction_energy = (
+            dimer_basis.molecule().nuclear_repulsion_energy() -
+            m1_basis.molecule().nuclear_repulsion_energy() -
+            m2_basis.molecule().nuclear_repulsion_energy())
+
+
+    def _initialize_jk(self, basis, aux_basis, do_J=True, do_K=True):
+        jk = core.JK.build(basis, aux_basis)
+        jk.set_memory(int(float(core.get_global_option("SCF_MEM_SAFETY_FACTOR")) * core.get_memory()) / 8)
+        jk.set_do_J(do_J)
+        jk.set_do_K(do_K)
+        jk.print_header()
+        jk.initialize()
+        return jk
+
+    def _initialize_mints(self, basis, v_only=False):
+        mints = core.MintsHelper(basis)
+        V = mints.ao_potential()
+        if v_only:
+            return V
+
+        T = mints.ao_kinetic()
+        S = mints.ao_overlap()
+        return V, T, S
+
+    def hl(self):
+        return HeitlerLondonFunctor(self)
+
+    def esovlp(self):
+        return EletrostaticsOverlapFunctor(self)
+
+
 class HeitlerLondonFunctor(object):
     def __init__(self, energy_decomposition):
         self.p = energy_decomposition
@@ -120,46 +161,6 @@ class EletrostaticsOverlapFunctor(object):
         electrostatic = self.p.nuclear_interaction_energy + nuel_1to2 + nuel_2to1 + elel_1to2 + elel_2to1
         return electrostatic, overlap
 
-
-class EnergyDecomposition(object):
-    def __init__(self, m1_basis, m2_basis, dimer_basis, dimer_aux_basis):
-        self.dimer_basis = dimer_basis
-        self.dimer_aux_basis = dimer_aux_basis
-
-        self.dimer_V, self.dimer_T, self.dimer_S = self._initialize_mints(dimer_basis)
-        self.monomer1_V = self._initialize_mints(m1_basis, v_only=True)
-        self.monomer2_V = self._initialize_mints(m2_basis, v_only=True)
-
-        self.nuclear_interaction_energy = (
-            dimer_basis.molecule().nuclear_repulsion_energy() -
-            m1_basis.molecule().nuclear_repulsion_energy() -
-            m2_basis.molecule().nuclear_repulsion_energy())
-
-
-    def _initialize_jk(self, basis, aux_basis, do_J=True, do_K=True):
-        jk = core.JK.build(basis, aux_basis)
-        jk.set_memory(int(float(core.get_global_option("SCF_MEM_SAFETY_FACTOR")) * core.get_memory()) / 8)
-        jk.set_do_J(do_J)
-        jk.set_do_K(do_K)
-        jk.print_header()
-        jk.initialize()
-        return jk
-
-    def _initialize_mints(self, basis, v_only=False):
-        mints = core.MintsHelper(basis)
-        V = mints.ao_potential()
-        if v_only:
-            return V
-
-        T = mints.ao_kinetic()
-        S = mints.ao_overlap()
-        return V, T, S
-
-    def hl(self):
-        return HeitlerLondonFunctor(self)
-
-    def esovlp(self):
-        return EletrostaticsOverlapFunctor(self)
 
 
 def orthogonalize(C, S):
