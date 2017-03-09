@@ -26,11 +26,6 @@ symmetry c1
 
 
 set {
-  basis cc-pvdz
-  df_basis_scf cc-pvdz-jkfit
-  guess sad
-  scf_type df
-  mp2_type df
   memory 7gb
   freeze_core true
 }

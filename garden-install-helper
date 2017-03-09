@@ -1,0 +1,38 @@
+#!/bin/bash
+set -e
+name="psi4nnmp2"
+st_version="010"
+version="0.1.0"
+
+case $1 in
+--name)
+        echo $name
+        ;;
+--version)
+        echo $version
+        ;;
+--install)
+        mkdir -p $PREFIX/python
+        garden with -c -m simtools-dependencies/${st_version}/lib-python pip install . --install-option="--prefix=$PREFIX" \
+                --install-option="--install-lib=$PREFIX/python" \
+                --install-option="--install-scripts=$PREFIX/bin"
+
+        # Create a .../lib-python gardenfile
+        cat >> $GARDENDIR/bin <<EOF
+prereq psi4/1.1a2.dev321+b9f85ba-01/bin
+prepend-path PYTHONPATH       $PREFIX/python
+EOF
+        # Create ModulesHelp
+cat >> $PREFIX/ModulesHelp <<EOF
+Release notes:
+0.1 - First cut
+
+
+$name - Neural network spin-component scaled MP2
+Version $version
+
+EOF
+
+        ;;
+esac
+set +e
