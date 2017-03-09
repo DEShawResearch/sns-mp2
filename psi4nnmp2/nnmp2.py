@@ -1,4 +1,3 @@
-import os
 import itertools
 from collections import namedtuple
 import numpy as np
@@ -21,8 +20,8 @@ def run_nnmp2(name, molecule, **kwargs):
     if nfrag != 2:
         raise ValidationError('NN-MP2 requires active molecule to have 2 fragments, not %s.' % (nfrag))
 
-    LOW = 'cc-pvdz'
-    HIGH = 'cc-pvdz'
+    LOW = 'aug-cc-pvtz'
+    HIGH = 'aug-cc-pvqz'
 
     # Run the 8 HF and MP2 calculations we need
     c = WavefunctionCache(molecule, low=LOW, high=HIGH)
@@ -45,15 +44,23 @@ def run_nnmp2(name, molecule, **kwargs):
             return d.get_variable(field) - (m1.get_variable(field) + m2.get_variable(field))
 
         return {
-            ('DF-MP2/%s CP Interaction Energy' % HIGH):               interaction('MP2 TOTAL ENERGY', basis='high'),
-            ('DF-HF/%s CP Interaction Energy' % HIGH):                interaction('SCF TOTAL ENERGY', basis='high'),
-            ('DF-MP2/%s CP Same-Spin Interaction Energy' % HIGH):     interaction('MP2 SAME-SPIN CORRELATION ENERGY', basis='high'),
-            ('DF-MP2/%s CP Opposite-Spin Interaction Energy' % HIGH): interaction('MP2 OPPOSITE-SPIN CORRELATION ENERGY', basis='high'),
+            ('DF-MP2/%s CP Interaction Energy' % HIGH):
+                interaction('MP2 TOTAL ENERGY', basis='high'),
+            ('DF-HF/%s CP Interaction Energy' % HIGH):
+                interaction('SCF TOTAL ENERGY', basis='high'),
+            ('DF-MP2/%s CP Same-Spin Interaction Energy' % HIGH):
+                interaction('MP2 SAME-SPIN CORRELATION ENERGY', basis='high'),
+            ('DF-MP2/%s CP Opposite-Spin Interaction Energy' % HIGH):
+                interaction('MP2 OPPOSITE-SPIN CORRELATION ENERGY', basis='high'),
 
-            ('DF-MP2/%s CP Interaction Energy' % LOW):                interaction('MP2 TOTAL ENERGY', basis='low'),
-            ('DF-HF/%s CP Interaction Energy' % LOW):                 interaction('SCF TOTAL ENERGY', basis='low'),
-            ('DF-MP2/%s CP Same-Spin Interaction Energy' % LOW):      interaction('MP2 SAME-SPIN CORRELATION ENERGY', basis='low'),
-            ('DF-MP2/%s CP Opposite-Spin Interaction Energy' % LOW):  interaction('MP2 OPPOSITE-SPIN CORRELATION ENERGY', basis='low'),
+            ('DF-MP2/%s CP Interaction Energy' % LOW):
+                interaction('MP2 TOTAL ENERGY', basis='low'),
+            ('DF-HF/%s CP Interaction Energy' % LOW):
+                interaction('SCF TOTAL ENERGY', basis='low'),
+            ('DF-MP2/%s CP Same-Spin Interaction Energy' % LOW):
+                interaction('MP2 SAME-SPIN CORRELATION ENERGY', basis='low'),
+            ('DF-MP2/%s CP Opposite-Spin Interaction Energy' % LOW):
+                interaction('MP2 OPPOSITE-SPIN CORRELATION ENERGY', basis='low'),
         }
 
     ###################################################################
