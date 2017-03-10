@@ -245,6 +245,10 @@ class WavefunctionCache(object):
 
 
 def dimerize(molecule, basis='monomer'):
+    nfrag = molecule.nfragments()
+    if nfrag != 2:
+        raise ValidationError('NN-MP2 requires active molecule to have 2 fragments, not %s.' % (nfrag))
+
     if basis == 'monomer':
         monomer1 = molecule.extract_subsets(1)
         monomer2 = molecule.extract_subsets(2)
