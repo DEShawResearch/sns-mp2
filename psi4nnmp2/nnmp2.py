@@ -67,14 +67,14 @@ def run_nnmp2(name, molecule, **kwargs):
     ###################################################################
 
     def format_espx():
-        aux_basis = core.BasisSet.build(ddhigh.molecule(), "DF_BASIS_MP2",
-                                        HIGH+'-jkfit', "RIFIT", HIGH)
         optstash = p4util.optproc.OptionsState(
             ['DF_INTS_IO'],
-            ['SCF_TYPE']
+            ['SCF_TYPE'],
         )
         core.set_global_option('SCF_TYPE', 'DF')
         core.set_global_option('DF_INTS_IO', 'LOAD')
+        aux_basis = core.BasisSet.build(molecule, "DF_BASIS_MP2",
+                                        HIGH+'-jkfit', "RIFIT", HIGH)
 
         decomp = ESHLOVLPDecomposition(
             m1_basis=m1mhigh.basisset(),
@@ -90,7 +90,7 @@ def run_nnmp2(name, molecule, **kwargs):
         del esovlpfunc
 
         hlfunc = decomp.hl()
-        hl = hlfunc(m1mhigh, m1mhigh)
+        hl = hlfunc(m1mhigh.reference_wavefunction(), m2mhigh.reference_wavefunction())
 
         optstash.restore()
         return {
@@ -98,7 +98,7 @@ def run_nnmp2(name, molecule, **kwargs):
             'DF-HF/{} Density Matrix Overlap'.format(HIGH): ovlhf,
             'DF-MP2/{} Electrostatic Interaction Energy'.format(HIGH): esmp,
             'DF-MP2/{} Density Matrix Overlap'.format(HIGH): ovlmp,
-            '{} Heitler-London Energy'.format(HIGH): hl
+            'DF-HF/{} Heitler-London Energy'.format(HIGH): hl
         }
 
     ###################################################################
@@ -110,7 +110,7 @@ def run_nnmp2(name, molecule, **kwargs):
             ['SAPT', 'D_CONVERGENCE'],
             ['DF_BASIS_SAPT'],
             ['DF_BASIS_ELST'],
-            ['SAPT', 'NAT_ORBS_T2']
+            ['SAPT', 'NAT_ORBS_T2'],
             ['BASIS'],
         )
 

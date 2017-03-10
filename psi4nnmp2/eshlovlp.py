@@ -61,13 +61,10 @@ class HeitlerLondonFunctor(object):
         m2_OCC = mol2_wfn.Ca_subset('SO', 'OCC')
 
         C = core.Matrix(nbf, nocc)
-        C.zero()
         C.np[:mol1_wfn.nso(), :mol1_wfn.nalpha()] = m1_OCC.np[:, :]
-        C.np[mol1_wfn.nso():, mol1_wfn.nalpha():] = m2_OCC.np[:, :]
-        del m1_OCC, m2_OCC
+        C.np[-mol2_wfn.nso():, -mol2_wfn.nalpha():] = m2_OCC.np[:, :]
 
         C = orthogonalize(C, self.p.dimer_S)
-        # D2 = core.Matrix.doublet(C2, C2, False, True)
 
         # At this point, it should be the case that
         # C.T * S * C == I
@@ -163,6 +160,7 @@ class EletrostaticsOverlapFunctor(object):
 
 
 
+
 def orthogonalize(C, S):
     nbf, nocc = C.shape
 
@@ -179,4 +177,3 @@ def orthogonalize(C, S):
     orthonormal.np[:, :] /= sqrt_eigvals.np[np.newaxis, :]
 
     return orthonormal
-

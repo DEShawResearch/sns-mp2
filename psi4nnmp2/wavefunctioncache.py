@@ -12,7 +12,7 @@ calcid = namedtuple('calcid', ('V', 'B', 'Z'))
 
 
 class WavefunctionCache(object):
-    def __init__(self, dimer, no_reuse=False, low='cc-pvtz', high='aug-cc-pvtz'):
+    def __init__(self, dimer, no_reuse=False, low='aug-cc-pvtz', high='aug-cc-pvtz'):
         self._d = dimer
         self._m1d, self._m2d = dimerize(dimer, basis='dimer')
         self._m1m, self._m2m = dimerize(dimer, basis='monomer')
