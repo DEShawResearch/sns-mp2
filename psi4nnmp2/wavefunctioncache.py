@@ -1,4 +1,5 @@
 import os
+import shutil
 import numpy as np
 from collections import namedtuple
 from psi4 import core
@@ -72,13 +73,15 @@ class WavefunctionCache(object):
             if candidate1 in self.wfn_cache and candidate2 in self.wfn_cache:
                 return self._init_stack_C(calc, candidate1, candidate2)
 
+        # print('nocast')
+
     def _init_upcast_C(self, oldcalc, calc):
         # print('Upcasting %s->%s' % (oldcalc, calc))
         assert oldcalc.V == calc.V and oldcalc.B == calc.B
         core.set_local_option('SCF', 'GUESS', 'READ')
         oldfn = self._fmt_mo_fn(oldcalc)
         newfn = self._fmt_mo_fn(calc)
-        os.link(oldfn, newfn)
+        shutil.copy(oldfn, newfn)
         extras.register_numpy_file(newfn)
 
     def _fmt_mo_fn(self, calc):
@@ -93,6 +96,9 @@ class WavefunctionCache(object):
         data = np.load(old_filename)
         Ca_occ = core.Matrix.np_read(data, "Ca_occ")
         Cb_occ = core.Matrix.np_read(data, "Cb_occ")
+        #oldwfn = self.wfn_cache[oldcalc]
+        #Ca_occ = oldwfn.Ca_subset('SO', 'OCC')
+        #Cb_occ = oldwfn.Cb_subset('SO', 'OCC')
 
         m1_nso = self.wfn_cache[('m1', 'm', oldcalc.Z)].nso()
         m2_nso = self.wfn_cache[('m2', 'm', oldcalc.Z)].nso()
