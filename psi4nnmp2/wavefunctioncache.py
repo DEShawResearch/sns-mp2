@@ -72,17 +72,17 @@ class WavefunctionCache(object):
                 return self._init_stack_C(calc, candidate1, candidate2)
 
     def _init_upcast_C(self, oldcalc, calc):
-        # print('Upcasting', oldcalc, calc)
+        # print('Upcasting %s->%s' % (oldcalc, calc))
         assert oldcalc.V == calc.V and oldcalc.B == calc.B
         core.set_local_option('SCF', 'GUESS', 'READ')
         core.IO.change_file_namespace(constants.PSIF_SCF_MOS, self.fmt_ns(oldcalc), self.fmt_ns(calc))
 
     def _init_addghost_C(self, oldcalc, calc):
-        # print('Adding ghost', oldcalc, calc)
+        # print('Adding ghost %s->%s' % (oldcalc, calc))
         this_molecule = self.molecule(calc)
         old_molecule = self.molecule(oldcalc)
 
-        old_filename = "%s.%s.npz" % (core.get_writer_file_prefix(old_molecule.name()), constants.PSIF_SCF_MOS)
+        old_filename = "%s.%s.npz" % (core.get_writer_file_prefix(self.fmt_ns(oldcalc)), constants.PSIF_SCF_MOS)
         data = np.load(old_filename)
         Ca_occ = core.Matrix.np_read(data, "Ca_occ")
         Cb_occ = core.Matrix.np_read(data, "Cb_occ")
@@ -97,7 +97,6 @@ class WavefunctionCache(object):
         if calc.V == 'm1':
             Ca_occ_d = core.Matrix('Ca_occ', (m1_nso + m2_nso), m1_nalpha)
             Ca_occ_d.np[:m1_nso, :] = Ca_occ.np[:, :]
-
             Cb_occ_d = core.Matrix('Cb_occ', (m1_nso + m2_nso), m1_nbeta)
             Cb_occ_d.np[:m1_nso, :] = Cb_occ.np[:, :]
         elif calc.V == 'm2':
@@ -111,7 +110,7 @@ class WavefunctionCache(object):
         data_dict.update(Ca_occ_d.np_write(prefix='Ca_occ'))
         data_dict.update(Cb_occ_d.np_write(prefix='Cb_occ'))
 
-        write_filename = core.get_writer_file_prefix(this_molecule.name()) + ".180.npz"
+        write_filename = core.get_writer_file_prefix(self.fmt_ns(calc)) + ".180.npz"
         np.savez(write_filename, **data_dict)
         extras.register_numpy_file(write_filename)
         core.set_local_option('SCF', 'GUESS', 'READ')
@@ -125,8 +124,8 @@ class WavefunctionCache(object):
         mol1 = self.molecule(oldcalc_m1)
         mol2 = self.molecule(oldcalc_m2)
 
-        m1_C_fn = "%s.%s.npz" % (core.get_writer_file_prefix(mol1.name()), constants.PSIF_SCF_MOS)
-        m2_C_fn = "%s.%s.npz" % (core.get_writer_file_prefix(mol2.name()), constants.PSIF_SCF_MOS)        
+        m1_C_fn = "%s.%s.npz" % (core.get_writer_file_prefix(self.fmt_ns(oldcalc_m1)), constants.PSIF_SCF_MOS)
+        m2_C_fn = "%s.%s.npz" % (core.get_writer_file_prefix(self.fmt_ns(oldcalc_m2)), constants.PSIF_SCF_MOS)
         m1_data = np.load(m1_C_fn)
         m2_data = np.load(m2_C_fn)
         m1_Ca_occ = core.Matrix.np_read(m1_data, "Ca_occ")
@@ -167,7 +166,7 @@ class WavefunctionCache(object):
 
         data.update(d_Ca_occ.np_write(prefix='Ca_occ'))
         data.update(d_Cb_occ.np_write(prefix='Cb_occ'))
-        m1_C_fn = "%s.%s.npz" % (core.get_writer_file_prefix(this_molecule.name()), constants.PSIF_SCF_MOS)
+        m1_C_fn = "%s.%s.npz" % (core.get_writer_file_prefix(self.fmt_ns(calc)), constants.PSIF_SCF_MOS)
         np.savez(m1_C_fn, **data)
 
         core.set_local_option('SCF', 'GUESS', 'READ')
@@ -199,11 +198,12 @@ class WavefunctionCache(object):
             ['SCF_TYPE']
         )
         calc = calcid(mol_name, basis_center, basis_quality)
+        molecule = self.molecule(calc)
+        molecule.set_name(self.fmt_ns(calc))
+        basis = self.basis_sets[basis_quality]
+
         self._init_ns(calc)
         self._init_df(calc)
-
-        molecule = self.molecule(calc)
-        basis = self.basis_sets[basis_quality]
 
         core.set_global_option('SCF_TYPE', 'DF')
         core.set_global_option('MP2_TYPE', 'DF')        
@@ -232,14 +232,10 @@ class WavefunctionCache(object):
 def dimerize(molecule, basis='monomer'):
     if basis == 'monomer':
         monomer1 = molecule.extract_subsets(1)
-        monomer1.set_name('Monomer_A_MCBS')
         monomer2 = molecule.extract_subsets(2)
-        monomer2.set_name('Monomer_B_MCBS')
     elif basis == 'dimer':
         monomer1 = molecule.extract_subsets(1, 2)
-        monomer1.set_name('Monomer_A_DCBS')
         monomer2 = molecule.extract_subsets(2, 1)
-        monomer2.set_name('Monomer_B_DCBS')
 
     return monomer1, monomer2
 

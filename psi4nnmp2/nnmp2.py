@@ -23,11 +23,12 @@ def run_nnmp2(name, molecule, **kwargs):
     LOW = 'aug-cc-pvtz'
     HIGH = 'aug-cc-pvqz'
 
-    # Run the 8 HF and MP2 calculations we need
     c = WavefunctionCache(molecule, low=LOW, high=HIGH)
+    m1mlow = c.compute('m1', 'm', 'low', mp2=False)
+    m2mlow = c.compute('m2', 'm', 'low', mp2=False)
     m1mhigh = c.compute('m1', 'm', 'high', mp2=True, mp2_dm=True) 
     m2mhigh = c.compute('m2', 'm', 'high', mp2=True, mp2_dm=True) 
-    m1dlow  = c.compute('m1', 'd', 'low',  mp2=True) 
+    m1dlow  = c.compute('m1', 'd', 'low',  mp2=True)
     m2dlow  = c.compute('m2', 'd', 'low',  mp2=True) 
     m1dhigh = c.compute('m1', 'd', 'high', mp2=True)
     m2dhigh = c.compute('m2', 'd', 'high', mp2=True)
@@ -96,7 +97,7 @@ def run_nnmp2(name, molecule, **kwargs):
             'DF-HF/{} Electrostatic Interaction Energy'.format(HIGH): eshf,
             'DF-HF/{} Density Matrix Overlap'.format(HIGH): ovlhf,
             'DF-MP2/{} Electrostatic Interaction Energy'.format(HIGH): esmp,
-            'DF-MP2{} Density Matrix Overlap'.format(HIGH): ovlmp,
+            'DF-MP2/{} Density Matrix Overlap'.format(HIGH): ovlmp,
             '{} Heitler-London Energy'.format(HIGH): hl
         }
 
@@ -109,6 +110,7 @@ def run_nnmp2(name, molecule, **kwargs):
             ['SAPT', 'D_CONVERGENCE'],
             ['DF_BASIS_SAPT'],
             ['DF_BASIS_ELST'],
+            ['SAPT', 'NAT_ORBS_T2']
             ['BASIS'],
         )
 
@@ -116,16 +118,17 @@ def run_nnmp2(name, molecule, **kwargs):
         core.set_local_option('SAPT', 'SAPT_LEVEL', 'SAPT0')
         core.set_local_option('SAPT', 'E_CONVERGENCE', 10e-10)
         core.set_local_option('SAPT', 'D_CONVERGENCE', 10e-10)
-        core.set_global_option('BASIS', HIGH)
-        core.set_global_option('DF_BASIS_SAPT', HIGH + '-jkfit')
+        core.set_local_option('SAPT', 'NAT_ORBS_T2', True)
+        core.set_global_option('BASIS', LOW)
+        core.set_global_option('DF_BASIS_SAPT', LOW + '-jkfit')
 
-        dimer_wfn = ddhigh.reference_wavefunction()
+        dimer_wfn = ddlow.reference_wavefunction()
         aux_basis = core.BasisSet.build(dimer_wfn.molecule(), "DF_BASIS_SAPT",
                                         core.get_global_option("DF_BASIS_SAPT"),
                                         "RIFIT", core.get_global_option("BASIS"))
         dimer_wfn.set_basisset("DF_BASIS_SAPT", aux_basis)
         dimer_wfn.set_basisset("DF_BASIS_ELST", aux_basis)
-        e_sapt = core.sapt(dimer_wfn, m1mhigh.reference_wavefunction(), m2mhigh.reference_wavefunction())
+        e_sapt = core.sapt(dimer_wfn, m1mlow, m2mlow)
 
         optstash.restore()
         return {k: core.get_variable(k) for k in ('SAPT ELST10,R ENERGY', 'SAPT EXCH10 ENERGY',
@@ -154,7 +157,7 @@ def run_nnmp2(name, molecule, **kwargs):
             sorted(espx_fields.iteritems()),
             sorted(intene_fields.iteritems()),
             sorted(sapt_fields.iteritems())):
-        outlines.append('{:<52s} {:24.16f}'.format(k + ':', v))
+        outlines.append('{:<55s} {:24.16f}'.format(k + ':', v))
 
     outlines.extend(['-' * 77, ''])
     core.print_out('\n'.join(outlines))
