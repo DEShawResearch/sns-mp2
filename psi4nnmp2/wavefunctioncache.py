@@ -201,14 +201,15 @@ class WavefunctionCache(object):
             core.set_local_option("SCF", "DF_INTS_IO", "NONE")
 
 
-    def compute(self, mol_name='m1', basis_center='m', basis_quality='low', mp2=False, mp2_dm=False):
+    def compute(self, mol_name='m1', basis_center='m', basis_quality='low', mp2=False, mp2_dm=False, save_jk=False):
         optstash = p4util.optproc.OptionsState(
             ['BASIS'],
             ['DF_BASIS_SCF'],
             ['DF_BASIS_MP2'],            
             ['SCF', 'GUESS'],
             ['SCF', 'DF_INTS_IO'],
-            ['SCF_TYPE']
+            ['SCF_TYPE'],
+            ['SCF', 'SAVE_JK']
         )
         calc = calcid(mol_name, basis_center, basis_quality)
         molecule = self.molecule(calc)
@@ -223,6 +224,7 @@ class WavefunctionCache(object):
         core.set_global_option('BASIS', basis)
         core.set_global_option('DF_BASIS_SCF', basis + '-jkfit')
         core.set_global_option('DF_BASIS_MP2', basis + '-jkfit')        
+        core.set_local_option('SCF', 'SAVE_JK', save_jk)
 
         wfn = scf_helper('scf', molecule=molecule)
         if mp2 and not mp2_dm:

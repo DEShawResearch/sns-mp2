@@ -24,16 +24,16 @@ def run_nnmp2(name, molecule, **kwargs):
     HIGH = 'aug-cc-pvqz'
 
     c = WavefunctionCache(molecule, low=LOW, high=HIGH)
-    m1mlow  = c.compute('m1', 'm', 'low', mp2=False)
-    m2mlow  = c.compute('m2', 'm', 'low', mp2=False)
+    #m1mlow  = c.compute('m1', 'm', 'low', mp2=False)
+    #m2mlow  = c.compute('m2', 'm', 'low', mp2=False)
     m1mhigh = c.compute('m1', 'm', 'high', mp2=True, mp2_dm=True) 
     m2mhigh = c.compute('m2', 'm', 'high', mp2=True, mp2_dm=True) 
-    m1dlow  = c.compute('m1', 'd', 'low',  mp2=True)
-    m2dlow  = c.compute('m2', 'd', 'low',  mp2=True) 
-    m1dhigh = c.compute('m1', 'd', 'high', mp2=True)
-    m2dhigh = c.compute('m2', 'd', 'high', mp2=True)
-    ddlow   = c.compute('d', 'd',  'low',  mp2=True)  
-    ddhigh  = c.compute('d', 'd',  'high', mp2=True) 
+    #m1dlow  = c.compute('m1', 'd', 'low',  mp2=True)
+    #m2dlow  = c.compute('m2', 'd', 'low',  mp2=True) 
+    #m1dhigh = c.compute('m1', 'd', 'high', mp2=True)
+    #m2dhigh = c.compute('m2', 'd', 'high', mp2=True)
+    #ddlow   = c.compute('d', 'd',  'low',  mp2=True)  
+    ddhigh  = c.compute('d', 'd',  'high', mp2=True, save_jk=True) 
 
     ###################################################################
 
@@ -80,10 +80,12 @@ def run_nnmp2(name, molecule, **kwargs):
             m1_basis=m1mhigh.basisset(),
             m2_basis=m2mhigh.basisset(),
             dimer_basis=ddhigh.basisset(),
-            dimer_aux_basis=aux_basis)
+            dimer_jk=ddhigh.reference_wavefunction().jk())
+            #dimer_basis=ddhigh.basisset(),
+            #dimer_aux_basis=aux_basis)
 
         esovlpfunc = decomp.esovlp()
-        eshf, ovlhf = esovlpfunc(m1mhigh.reference_wavefunction(), m2mhigh.reference_wavefunction())
+        #eshf, ovlhf = esovlpfunc(m1mhigh.reference_wavefunction(), m2mhigh.reference_wavefunction())
         esmp, ovlmp = esovlpfunc(m1mhigh, m2mhigh)
 
         # release some memory
@@ -149,9 +151,9 @@ def run_nnmp2(name, molecule, **kwargs):
     # Format output
     outlines = [
         '',
-        '-' * 77,
-        '=' * 24 + ' DESRES ENERGY DECOMPOSITION ' + '=' * 24,
-        '-' * 77,
+        '-' * 79,
+        '=' * 25 + ' DESRES ENERGY DECOMPOSITION ' + '=' * 25,
+        '-' * 79,
     ]
     for k, v in itertools.chain(
             sorted(espx_fields.iteritems()),
@@ -159,7 +161,7 @@ def run_nnmp2(name, molecule, **kwargs):
             sorted(sapt_fields.iteritems())):
         outlines.append('{:<55s} {:24.16f}'.format(k + ':', v))
 
-    outlines.extend(['-' * 77, ''])
+    outlines.extend(['-' * 79, ''])
     core.print_out('\n'.join(outlines))
 
     core.tstop()
