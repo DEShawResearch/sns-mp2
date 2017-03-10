@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from collections import namedtuple
 from psi4 import core
@@ -75,14 +76,20 @@ class WavefunctionCache(object):
         # print('Upcasting %s->%s' % (oldcalc, calc))
         assert oldcalc.V == calc.V and oldcalc.B == calc.B
         core.set_local_option('SCF', 'GUESS', 'READ')
-        core.IO.change_file_namespace(constants.PSIF_SCF_MOS, self.fmt_ns(oldcalc), self.fmt_ns(calc))
+        oldfn = self._fmt_mo_fn(oldcalc)
+        newfn = self._fmt_mo_fn(calc)
+        os.link(oldfn, newfn)
+        extras.register_numpy_file(newfn)
+
+    def _fmt_mo_fn(self, calc):
+        return "%s.%s.npz" % (core.get_writer_file_prefix(self.fmt_ns(calc)), constants.PSIF_SCF_MOS)
 
     def _init_addghost_C(self, oldcalc, calc):
         # print('Adding ghost %s->%s' % (oldcalc, calc))
         this_molecule = self.molecule(calc)
         old_molecule = self.molecule(oldcalc)
 
-        old_filename = "%s.%s.npz" % (core.get_writer_file_prefix(self.fmt_ns(oldcalc)), constants.PSIF_SCF_MOS)
+        old_filename = self._fmt_mo_fn(oldcalc)
         data = np.load(old_filename)
         Ca_occ = core.Matrix.np_read(data, "Ca_occ")
         Cb_occ = core.Matrix.np_read(data, "Cb_occ")
@@ -124,8 +131,8 @@ class WavefunctionCache(object):
         mol1 = self.molecule(oldcalc_m1)
         mol2 = self.molecule(oldcalc_m2)
 
-        m1_C_fn = "%s.%s.npz" % (core.get_writer_file_prefix(self.fmt_ns(oldcalc_m1)), constants.PSIF_SCF_MOS)
-        m2_C_fn = "%s.%s.npz" % (core.get_writer_file_prefix(self.fmt_ns(oldcalc_m2)), constants.PSIF_SCF_MOS)
+        m1_C_fn = self._fmt_mo_fn(oldcalc_m1)
+        m2_C_fn = self._fmt_mo_fn(oldcalc_m2)
         m1_data = np.load(m1_C_fn)
         m2_data = np.load(m2_C_fn)
         m1_Ca_occ = core.Matrix.np_read(m1_data, "Ca_occ")
@@ -166,7 +173,7 @@ class WavefunctionCache(object):
 
         data.update(d_Ca_occ.np_write(prefix='Ca_occ'))
         data.update(d_Cb_occ.np_write(prefix='Cb_occ'))
-        m1_C_fn = "%s.%s.npz" % (core.get_writer_file_prefix(self.fmt_ns(calc)), constants.PSIF_SCF_MOS)
+        m1_C_fn = self._fmt_mo_fn(calc)
         np.savez(m1_C_fn, **data)
 
         core.set_local_option('SCF', 'GUESS', 'READ')

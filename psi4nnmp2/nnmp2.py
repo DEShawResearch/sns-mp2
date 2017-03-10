@@ -24,8 +24,8 @@ def run_nnmp2(name, molecule, **kwargs):
     HIGH = 'aug-cc-pvqz'
 
     c = WavefunctionCache(molecule, low=LOW, high=HIGH)
-    m1mlow = c.compute('m1', 'm', 'low', mp2=False)
-    m2mlow = c.compute('m2', 'm', 'low', mp2=False)
+    m1mlow  = c.compute('m1', 'm', 'low', mp2=False)
+    m2mlow  = c.compute('m2', 'm', 'low', mp2=False)
     m1mhigh = c.compute('m1', 'm', 'high', mp2=True, mp2_dm=True) 
     m2mhigh = c.compute('m2', 'm', 'high', mp2=True, mp2_dm=True) 
     m1dlow  = c.compute('m1', 'd', 'low',  mp2=True)
