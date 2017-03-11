@@ -151,3 +151,10 @@ def run_nnmp2(name, molecule, **kwargs):
 
     core.print_out('\n'.join(outlines))
     core.tstop()
+
+    output_dict = dict()
+    output_dict.update(format_espx_human(HIGH, espx_data))
+    output_dict.update(format_intene_human(c).iteritems())
+    output_dict.update(sapt_data)
+    for k, v in output_dict.items():
+        core.set_variable(k, v)
