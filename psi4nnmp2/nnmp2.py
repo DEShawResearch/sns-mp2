@@ -1,12 +1,10 @@
 import itertools
-from collections import namedtuple
-import numpy as np
 import json
 from psi4 import core
 import psi4.driver.p4util as p4util
 
 from .eshlovlp import ESHLOVLPDecomposition
-from .wavefunctioncache import WavefunctionCache, calcid
+from .wavefunctioncache import WavefunctionCache
 from .format_output import format_espx_dict, format_intene_dict, format_sapt0_dict
 from .format_output import format_intene_human, format_espx_human
 
@@ -21,7 +19,7 @@ def run_nnmp2(name, molecule, **kwargs):
 
     nfrag = molecule.nfragments()
     if nfrag != 2:
-        raise ValidationError('NN-MP2 requires active molecule to have 2 fragments, not %s.' % (nfrag))
+        raise ValueError('NN-MP2 requires active molecule to have 2 fragments, not %s.' % (nfrag))
 
     LOW = 'aug-cc-pvtz'
     HIGH = 'aug-cc-pvqz'
@@ -102,7 +100,7 @@ def run_nnmp2(name, molecule, **kwargs):
                                         "RIFIT", core.get_global_option("BASIS"))
         dimer_wfn.set_basisset("DF_BASIS_SAPT", aux_basis)
         dimer_wfn.set_basisset("DF_BASIS_ELST", aux_basis)
-        e_sapt = core.sapt(dimer_wfn, m1mlow, m2mlow)
+        core.sapt(dimer_wfn, m1mlow, m2mlow)
 
         optstash.restore()
         return {k: core.get_variable(k) for k in ('SAPT ELST10,R ENERGY', 'SAPT EXCH10 ENERGY',

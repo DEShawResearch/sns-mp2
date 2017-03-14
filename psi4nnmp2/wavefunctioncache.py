@@ -1,4 +1,3 @@
-import os
 import shutil
 import numpy as np
 from collections import namedtuple
@@ -89,8 +88,6 @@ class WavefunctionCache(object):
 
     def _init_addghost_C(self, oldcalc, calc):
         # print('Adding ghost %s->%s' % (oldcalc, calc))
-        this_molecule = self.molecule(calc)
-        old_molecule = self.molecule(oldcalc)
 
         old_filename = self._fmt_mo_fn(oldcalc)
         data = np.load(old_filename)
@@ -133,9 +130,6 @@ class WavefunctionCache(object):
         assert oldcalc_m1.V == 'm1'
         assert oldcalc_m2.V == 'm2'
         # print('Stacking monomer wfns', calc, oldcalc_m1, oldcalc_m2)
-        this_molecule = self.molecule(calc)
-        mol1 = self.molecule(oldcalc_m1)
-        mol2 = self.molecule(oldcalc_m2)
 
         m1_C_fn = self._fmt_mo_fn(oldcalc_m1)
         m2_C_fn = self._fmt_mo_fn(oldcalc_m2)
@@ -200,6 +194,18 @@ class WavefunctionCache(object):
         else:
             core.set_local_option("SCF", "DF_INTS_IO", "NONE")
 
+    def _banner(self, calc, mp2=False, mp2_dm=False):
+        mol_name, basis_center, basis_quality = calc
+
+        mol_name = {'m1': 'Monomer A', 'm2': 'Monomer B', 'd': 'Dimer'}[mol_name]
+        centered = {'m': 'monomer', 'd': 'dimer'}[basis_center]
+        quality = self.basis_sets[basis_quality]
+
+        core.print_out('\n')
+        p4util.banner(' Scheduling {mol_name} in {quality} {centered}-centered basis ({c}) '.format(
+            mol_name=mol_name, quality=quality, centered=centered,
+            c='MP2 density matrix' if mp2_dm else ('MP2' if mp2 else 'HF')))
+        core.print_out('\n')
 
     def compute(self, mol_name='m1', basis_center='m', basis_quality='low', mp2=False, mp2_dm=False, save_jk=False):
         optstash = p4util.optproc.OptionsState(
@@ -216,6 +222,7 @@ class WavefunctionCache(object):
         molecule.set_name(self.fmt_ns(calc))
         basis = self.basis_sets[basis_quality]
 
+        self._banner(calc, mp2, mp2_dm)
         self._init_ns(calc)
         self._init_df(calc)
 
@@ -236,7 +243,8 @@ class WavefunctionCache(object):
             core.set_global_option("ONEPDM", True)
             wfn = run_dfmp2_gradient('df-mp2', molecule=molecule, ref_wfn=wfn)
             optstash2.restore()
-
+        if mp2_dm and not mp2:
+            raise ValueError('These options dont make sense')
 
         self.wfn_cache[calc] = wfn
 
@@ -247,7 +255,7 @@ class WavefunctionCache(object):
 def dimerize(molecule, basis='monomer'):
     nfrag = molecule.nfragments()
     if nfrag != 2:
-        raise ValidationError('NN-MP2 requires active molecule to have 2 fragments, not %s.' % (nfrag))
+        raise ValueError('NN-MP2 requires active molecule to have 2 fragments, not %s.' % (nfrag))
 
     if basis == 'monomer':
         monomer1 = molecule.extract_subsets(1)
