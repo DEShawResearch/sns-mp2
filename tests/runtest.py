@@ -11,7 +11,7 @@ THISDIR = os.path.abspath(os.path.dirname(__file__))
 
 @pytest.mark.parametrize("inputfn", [
     "2x{CC}.in",
-    "{CF}_0.in",
+    "{CF}_O.in",
 ])
 def test_generator(inputfn):
     with open(os.path.join(THISDIR, 'testlog.out'), 'a', 0) as logfile:
@@ -52,7 +52,7 @@ def backtick(exelist, loghandle):
 
 def setup_module(module):    
     os.chdir(THISDIR)
-    
+
     try:
         os.unlink(os.path.join(THISDIR, 'testlog.out'))
     except OSError:
