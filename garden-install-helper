@@ -17,18 +17,19 @@ case $1 in
                 --install-option="--install-lib=$PREFIX/python" \
                 --install-option="--install-scripts=$PREFIX/bin"
 
-        # Create a .../lib-python gardenfile
-        cat >> $GARDENDIR/bin <<EOF
-prereq psi4/1.1a2.dev321+b9f85ba-01/bin
+        # Create a /bin gardenfile with prereqs
+        python -c 'print "\n".join("prereq %s" % line.strip() for line in open("garden-prereq.txt"))' >> $GARDENDIR/bin
+cat >> $GARDENDIR/bin <<EOF
 prepend-path PYTHONPATH       $PREFIX/python
 EOF
+
         # Create ModulesHelp
 cat >> $PREFIX/ModulesHelp <<EOF
 Release notes:
 0.1 - First cut
 
 
-$name - Neural network spin-component scaled MP2
+$name - Neural network MP2 plugin for PSI4
 Version $version
 
 EOF

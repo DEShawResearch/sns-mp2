@@ -7,6 +7,7 @@ from psi4.driver.procrouting.proc import scf_helper
 from psi4.driver.molutil import constants
 from psi4 import extras
 import psi4.driver.p4util as p4util
+from .optstash import psiopts
 
 
 calcid = namedtuple('calcid', ('V', 'B', 'Z'))
@@ -208,46 +209,38 @@ class WavefunctionCache(object):
         core.print_out('\n')
 
     def compute(self, mol_name='m1', basis_center='m', basis_quality='low', mp2=False, mp2_dm=False, save_jk=False):
-        optstash = p4util.optproc.OptionsState(
-            ['BASIS'],
-            ['DF_BASIS_SCF'],
-            ['DF_BASIS_MP2'],            
-            ['SCF', 'GUESS'],
-            ['SCF', 'DF_INTS_IO'],
-            ['SCF_TYPE'],
-            ['SCF', 'SAVE_JK']
-        )
+
         calc = calcid(mol_name, basis_center, basis_quality)
         molecule = self.molecule(calc)
         molecule.set_name(self.fmt_ns(calc))
         basis = self.basis_sets[basis_quality]
 
         self._banner(calc, mp2, mp2_dm)
+
+        optstash = p4util.optproc.OptionsState(
+            ['SCF', 'DF_INTS_IO'],
+            ['SCF', 'GUESS'])
         self._init_ns(calc)
         self._init_df(calc)
 
-        core.set_global_option('SCF_TYPE', 'DF')
-        core.set_global_option('MP2_TYPE', 'DF')        
-        core.set_global_option('BASIS', basis)
-        core.set_global_option('DF_BASIS_SCF', basis + '-jkfit')
-        core.set_global_option('DF_BASIS_MP2', basis + '-jkfit')        
-        core.set_local_option('SCF', 'SAVE_JK', save_jk)
+        with psiopts(
+                'SCF_TYPE DF',
+                'MP2_TYPE DF',
+                'BASIS %s' % basis,
+                'DF_BASIS_SCF %s-jkfit' % basis,
+                'DF_BASIS_MP2 %s-jkfit' % basis,
+                'SCF SAVE_JK %s' % save_jk,
+                'ONEPDM TRUE'):
 
-        wfn = scf_helper('scf', molecule=molecule)
-        if mp2 and not mp2_dm:
-            wfn = run_dfmp2('df-mp2', molecule=molecule, ref_wfn=wfn)
-        if mp2 and mp2_dm:
-            optstash2 = p4util.optproc.OptionsState(
-                ['ONEPDM'],
-            )
-            core.set_global_option("ONEPDM", True)
-            wfn = run_dfmp2_gradient('df-mp2', molecule=molecule, ref_wfn=wfn)
-            optstash2.restore()
-        if mp2_dm and not mp2:
-            raise ValueError('These options dont make sense')
+            wfn = scf_helper('scf', molecule=molecule)
+            if mp2 and not mp2_dm:
+                wfn = run_dfmp2('df-mp2', molecule=molecule, ref_wfn=wfn)
+            if mp2 and mp2_dm:
+                wfn = run_dfmp2_gradient('df-mp2', molecule=molecule, ref_wfn=wfn)
+            if mp2_dm and not mp2:
+                raise ValueError('These options dont make sense')
 
         self.wfn_cache[calc] = wfn
-
         optstash.restore()
         return wfn
 

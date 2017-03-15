@@ -1,11 +1,12 @@
+#!/usr/bin/env python
 import os
 import sys
 import time
 import pytest
+import garden
 import subprocess
 import multiprocessing
-import garden
-garden.load('psi4nnmp2/0.1.0/bin')
+
 THISDIR = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -13,21 +14,26 @@ THISDIR = os.path.abspath(os.path.dirname(__file__))
     "2x{CC}.in",
     "{CF}_O.in",
 ])
-def test_generator(inputfn):
+def test_generator(inputfn, cmd_prefix, pythonpath_append):
+    fullname = os.path.join(THISDIR, inputfn)
+    cmd = cmd_prefix + ['psi4', '-n', str(multiprocessing.cpu_count()), fullname, 'stdout']
     with open(os.path.join(THISDIR, 'testlog.out'), 'a', 0) as logfile:
-        fullname = os.path.join(THISDIR, inputfn)
-        assert backtick(['psi4', '-n', str(multiprocessing.cpu_count()), fullname],
-                        logfile) == 0
+        assert backtick(cmd, logfile, pythonpath_append=pythonpath_append) == 0
 
 
-
-def backtick(exelist, loghandle):
+def backtick(exelist, loghandle, pythonpath_append=None):
     """Executes the command-argument list in *exelist*, directing the
     standard output to screen and file logfile and string p4out. Returns
     the system status of the call.
     """
+    env = dict(os.environ)
+    if pythonpath_append:
+        env['PYTHONPATH'] = '%s:%s' % (os.environ['PYTHONPATH'], pythonpath_append)
+
     try:
-        retcode = subprocess.Popen(exelist, bufsize=0, stdout=subprocess.PIPE, universal_newlines=True)
+        retcode = subprocess.Popen(exelist, bufsize=0, stdout=subprocess.PIPE,
+                                   universal_newlines=True,
+                                   env=env)
     except OSError as e:
         sys.stderr.write('Command %s execution failed: %s\n' % (exelist, e.strerror))
         sys.exit(1)
@@ -50,7 +56,7 @@ def backtick(exelist, loghandle):
     loghandle.close()
 
 
-def setup_module(module):    
+def setup_module(module):
     os.chdir(THISDIR)
 
     try:
@@ -65,3 +71,6 @@ def teardown_module(module):
     except OSError:
         pass
 
+
+if __name__ == '__main__':
+    pytest.main(['--verbose', '--psi4nnmp2_version=local'])

@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+from glob import glob
+from os import unlink
+from os.path import join, dirname
+
+
+THISDIR = dirname(__file__)
+
+def main():
+    for fn in glob(join(THISDIR, 'psi.*.clean')):
+        for line in open(fn):
+            unlink(fn.strip())
+
+    for fn in glob(join(THISDIR, '*.180.npz')):
+        unlink(fn)
+
+
+if __name__ == '__main__':
+    main()

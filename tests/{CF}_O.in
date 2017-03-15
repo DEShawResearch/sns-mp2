@@ -31,10 +31,10 @@ energy('nnmp2')
 # /d/en/donchev-4/QMDonchev2014/multimer_ecmp2/\{CF\}_O/ec/0/\{CF\}_O_0_intene.out 
 # /d/en/donchev-4/QMDonchev2014/multimer_ecmp2/\{CF\}_O/ec/0/\{CF\}_O_0_espx.out
 
-compare_values(get_variable('DF-HF/aug-cc-pvqz Density Matrix Overlap'),             0.02957596,  6, "ovlhf")
-compare_values(get_variable('DF-HF/aug-cc-pvqz Electrostatic Interaction Energy'),  -0.00863467,  6, "eshf")
-compare_values(get_variable('DF-HF/aug-cc-pvqz Heitler-London Energy'),             -0.00143114,  6, "hl")
-compare_values(get_variable('DF-MP2/aug-cc-pvqz Density Matrix Overlap'),            0.03455406,  6, "ovlmp")
-compare_values(get_variable('DF-MP2/aug-cc-pvqz Electrostatic Interaction Energy'), -0.00841727,  6, "esmp")
-compare_values(get_variable('DF-HF/aug-cc-pvqz CP Interaction Energy'),             -0.00348609,  5, "inthf")
-compare_values(get_variable('DF-MP2/aug-cc-pvqz CP Interaction Energy'),            -0.00597490,  5, "intmp")
+compare_values(get_variable('DF-HF/desavqz-psi-rev1 Density Matrix Overlap'),             0.02957596,  6, "ovlhf")
+compare_values(get_variable('DF-HF/desavqz-psi-rev1 Electrostatic Interaction Energy'),  -0.00863467,  6, "eshf")
+compare_values(get_variable('DF-HF/desavqz-psi-rev1 Heitler-London Energy'),             -0.00143114,  6, "hl")
+compare_values(get_variable('DF-MP2/desavqz-psi-rev1 Density Matrix Overlap'),            0.03455406,  6, "ovlmp")
+compare_values(get_variable('DF-MP2/desavqz-psi-rev1 Electrostatic Interaction Energy'), -0.00841727,  6, "esmp")
+compare_values(get_variable('DF-HF/desavqz-psi-rev1 CP Interaction Energy'),             -0.00348609,  5, "inthf")
+compare_values(get_variable('DF-MP2/desavqz-psi-rev1 CP Interaction Energy'),            -0.00597490,  5, "intmp")

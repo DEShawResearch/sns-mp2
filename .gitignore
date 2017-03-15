@@ -4,3 +4,4 @@
 *.pyc
 timer.dat
 build/
+testlog.out

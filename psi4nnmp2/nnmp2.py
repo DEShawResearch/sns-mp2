@@ -7,8 +7,12 @@ from .eshlovlp import ESHLOVLPDecomposition
 from .wavefunctioncache import WavefunctionCache
 from .format_output import format_espx_dict, format_intene_dict, format_sapt0_dict
 from .format_output import format_intene_human, format_espx_human
+from .optstash import psiopts
+
+# DEBUG = True
 
 
+@psiopts('freeze_core desresval')
 def run_nnmp2(name, molecule, **kwargs):
     # Force to c1
     molecule = molecule.clone()
@@ -21,8 +25,11 @@ def run_nnmp2(name, molecule, **kwargs):
     if nfrag != 2:
         raise ValueError('NN-MP2 requires active molecule to have 2 fragments, not %s.' % (nfrag))
 
-    LOW = 'aug-cc-pvtz'
-    HIGH = 'aug-cc-pvqz'
+    LOW = 'desavtz-psi-rev1'
+    HIGH = 'desavqz-psi-rev1'
+    #if DEBUG:
+    #    LOW = 'desvdz-psi-rev1'
+    #    HIGH = 'desvtz-psi-rev1'
 
     c = WavefunctionCache(molecule, low=LOW, high=HIGH)
     m1mlow  = c.compute('m1', 'm', 'low', mp2=False)
@@ -36,15 +43,14 @@ def run_nnmp2(name, molecule, **kwargs):
     ddlow   = c.compute('d', 'd',  'low',  mp2=True)
     ddhigh  = c.compute('d', 'd',  'high', mp2=True)
 
+
+    @psiopts(
+        'SCF_TYPE DF',
+        'DF_INTS_IO LOAD'
+    )
     def run_espx():
         core.tstart()
-        p4util.banner(' ESPX')
-        optstash = p4util.optproc.OptionsState(
-            ['DF_INTS_IO'],
-            ['SCF_TYPE'],
-        )
-        core.set_global_option('SCF_TYPE', 'DF')
-        core.set_global_option('DF_INTS_IO', 'LOAD')
+        p4util.banner('ESPX')
         aux_basis = core.BasisSet.build(molecule, "DF_BASIS_MP2",
                                         HIGH+'-jkfit', "RIFIT", HIGH)
 
@@ -64,7 +70,6 @@ def run_nnmp2(name, molecule, **kwargs):
         hl = hlfunc(m1mhigh.reference_wavefunction(), m2mhigh.reference_wavefunction())
 
         core.tstop()
-        optstash.restore()
         return {
             'eshf': eshf,
             'ovlhf': ovlhf,
@@ -75,25 +80,15 @@ def run_nnmp2(name, molecule, **kwargs):
 
     ###################################################################
 
+    @psiopts(
+        'SAPT SAPT_LEVEL SAPT0',
+        'SAPT E_CONVERGENCE 10e-10',
+        'SAPT D_CONVERGENCE 10e-10',
+        'SAPT NAT_ORBS_T2 TRUE',
+        'SCF_TYPE DF',
+        'DF_BASIS_SAPT %s-jkfit' % LOW,
+        'BASIS %s' % LOW)
     def run_sapt():
-        optstash = p4util.optproc.OptionsState(
-            ['SAPT', 'SAPT_LEVEL'],
-            ['SAPT', 'E_CONVERGENCE'],
-            ['SAPT', 'D_CONVERGENCE'],
-            ['DF_BASIS_SAPT'],
-            ['DF_BASIS_ELST'],
-            ['SAPT', 'NAT_ORBS_T2'],
-            ['BASIS'],
-        )
-
-        core.set_local_option('SCF', 'SCF_TYPE', 'DF')
-        core.set_local_option('SAPT', 'SAPT_LEVEL', 'SAPT0')
-        core.set_local_option('SAPT', 'E_CONVERGENCE', 10e-10)
-        core.set_local_option('SAPT', 'D_CONVERGENCE', 10e-10)
-        core.set_local_option('SAPT', 'NAT_ORBS_T2', True)
-        core.set_global_option('BASIS', LOW)
-        core.set_global_option('DF_BASIS_SAPT', LOW + '-jkfit')
-
         dimer_wfn = ddlow.reference_wavefunction()
         aux_basis = core.BasisSet.build(dimer_wfn.molecule(), "DF_BASIS_SAPT",
                                         core.get_global_option("DF_BASIS_SAPT"),
@@ -101,8 +96,6 @@ def run_nnmp2(name, molecule, **kwargs):
         dimer_wfn.set_basisset("DF_BASIS_SAPT", aux_basis)
         dimer_wfn.set_basisset("DF_BASIS_ELST", aux_basis)
         core.sapt(dimer_wfn, m1mlow, m2mlow)
-
-        optstash.restore()
         return {k: core.get_variable(k) for k in ('SAPT ELST10,R ENERGY', 'SAPT EXCH10 ENERGY',
                 'SAPT EXCH10(S^2) ENERGY', 'SAPT IND20,R ENERGY', 'SAPT EXCH-IND20,R ENERGY',
                 'SAPT EXCH-DISP20 ENERGY', 'SAPT DISP20 ENERGY', 'SAPT SAME-SPIN EXCH-DISP20 ENERGY',
@@ -135,17 +128,17 @@ def run_nnmp2(name, molecule, **kwargs):
 
     outlines = [
         '',
-        '-' * 80,
-        '=' * 26 + ' DESRES ENERGY DECOMPOSITION ' + '=' * 25,
-        '-' * 26 + '         (Hartrees)          ' + '-' * 25,
-        '-' * 80,
+        '-' * 82,
+        '=' * 27 + ' DESRES ENERGY DECOMPOSITION ' + '=' * 27,
+        '-' * 27 + '           (a.u)             ' + '-' * 27,
+        '-' * 82,
     ]
     for k, v in itertools.chain(
             sorted(format_espx_human(HIGH, espx_data).iteritems()),
             sorted(format_intene_human(c).iteritems()),
             sorted(sapt_data.iteritems())):
-        outlines.append('{:<55s} {:24.16f}'.format(k + ':', v))
-    outlines.extend(['-' * 80, ''])
+        outlines.append('{:<57s} {:24.16f}'.format(k + ':', v))
+    outlines.extend(['-' * 82, ''])
 
     core.print_out('\n'.join(outlines))
     core.tstop()
