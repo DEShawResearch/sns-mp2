@@ -1,4 +1,6 @@
+import os
 import shutil
+import itertools
 import numpy as np
 from collections import namedtuple
 from psi4 import core
@@ -15,6 +17,7 @@ calcid = namedtuple('calcid', ('V', 'B', 'Z'))
 
 class WavefunctionCache(object):
     def __init__(self, dimer, no_reuse=False, low='aug-cc-pvtz', high='aug-cc-pvtz'):
+        self._original_path = os.path.abspath(os.curdir)
         self._d = dimer
         self._m1d, self._m2d = dimerize(dimer, basis='dimer')
         self._m1m, self._m2m = dimerize(dimer, basis='monomer')
@@ -24,6 +27,17 @@ class WavefunctionCache(object):
             'low': low,
             'high': high,
         }
+        core.IOManager.shared_object().set_specific_retention(constants.PSIF_DFSCF_BJ, True)
+        os.chdir(core.IOManager.shared_object().get_default_path())
+
+    def __del__(self):
+        for calc in (calcid(*x) for x in itertools.product(('m1', 'm2', 'd'), ('m', 'd'), ('low', 'high'))):
+            core.IO.set_default_namespace(self.fmt_ns(calc))
+            core.IOManager.shared_object().set_specific_retention(constants.PSIF_DFSCF_BJ, False)
+        extras.clean_numpy_files()
+        extras.numpy_files = []
+        core.clean()
+        os.chdir(self._original_path)
 
     def molecule(self, calc):
         if calc.V == 'm1' and calc.B == 'm':
@@ -185,15 +199,14 @@ class WavefunctionCache(object):
 
         if calc.B == 'd':
             candidates = [calcid('m1', 'd', calc.Z), calcid('m2', 'd', calc.Z), calcid('d', 'd', calc.Z)]
+            core.set_global_option("DF_INTS_IO", "SAVE")
             for c in filter(lambda c: c in self.wfn_cache, candidates):
                 oldns = self.fmt_ns(c)
                 newns = self.fmt_ns(calc)
                 core.IO.change_file_namespace(constants.PSIF_DFSCF_BJ, oldns, newns)
-                core.set_local_option("SCF", "DF_INTS_IO", "LOAD")
-            else:
-                core.set_local_option("SCF", "DF_INTS_IO", "SAVE")
+                core.set_global_option("DF_INTS_IO", "LOAD")
         else:
-            core.set_local_option("SCF", "DF_INTS_IO", "NONE")
+            core.set_global_option("DF_INTS_IO", "NONE")
 
     def _banner(self, calc, mp2=False, mp2_dm=False):
         mol_name, basis_center, basis_quality = calc
@@ -209,7 +222,6 @@ class WavefunctionCache(object):
         core.print_out('\n')
 
     def compute(self, mol_name='m1', basis_center='m', basis_quality='low', mp2=False, mp2_dm=False, save_jk=False):
-
         calc = calcid(mol_name, basis_center, basis_quality)
         molecule = self.molecule(calc)
         molecule.set_name(self.fmt_ns(calc))
@@ -219,6 +231,7 @@ class WavefunctionCache(object):
 
         optstash = p4util.optproc.OptionsState(
             ['SCF', 'DF_INTS_IO'],
+            ['DF_INTS_IO'],
             ['SCF', 'GUESS'])
         self._init_ns(calc)
         self._init_df(calc)
@@ -227,8 +240,6 @@ class WavefunctionCache(object):
                 'SCF_TYPE DF',
                 'MP2_TYPE DF',
                 'BASIS %s' % basis,
-                'DF_BASIS_SCF %s-jkfit' % basis,
-                'DF_BASIS_MP2 %s-jkfit' % basis,
                 'SCF SAVE_JK %s' % save_jk,
                 'ONEPDM TRUE'):
 
@@ -242,6 +253,7 @@ class WavefunctionCache(object):
 
         self.wfn_cache[calc] = wfn
         optstash.restore()
+        core.clean()
         return wfn
 
 

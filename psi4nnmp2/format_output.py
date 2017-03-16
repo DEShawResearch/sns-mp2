@@ -79,14 +79,32 @@ def format_sapt0_dict(dwfn, sapt_data):
     }
 
 
-def format_espx_dict(dwfn, espx_data):
-    assert dwfn.name() == 'DF-MP2'
+def format_espx_dict(molecule, basis, espx_data):
+
+    class DummyHFWfn(object):
+        @staticmethod
+        def name():
+            return 'SCF'
+
+        @staticmethod
+        def basisset():
+            return basis
+
+        @staticmethod
+        def molecule():
+            return molecule
+
+    class DummyMP2Wfn(DummyHFWfn):
+        @staticmethod
+        def name():
+            return 'DF-MP2'
+
     return [
         {
             'calculation_type': 'espx',
             'error': False,
             'filename': os.path.abspath(core.outfile_name()),
-            'input': _format_input_block_dict(dwfn),
+            'input': _format_input_block_dict(DummyMP2Wfn()),
             'output': {
                 'ES': espx_data['esmp'],
                 'OVL': espx_data['ovlmp'],
@@ -96,7 +114,7 @@ def format_espx_dict(dwfn, espx_data):
             'calculation_type': 'espx',
             'error': False,
             'filename': os.path.abspath(core.outfile_name()),
-            'input': _format_input_block_dict(dwfn.reference_wavefunction()),
+            'input': _format_input_block_dict(DummyHFWfn),
             'output': {
                 'ES': espx_data['eshf'],
                 'OVL': espx_data['ovlhf'],
@@ -141,7 +159,7 @@ def format_intene_dict(m1wfn, m2wfn, dwfn):
 
 
 
-def _format_input_block_dict(dimer_wfn):
+def _format_input_block_dict(dimer_wfn=None):
     molecule = dimer_wfn.molecule()
     s1, s2 = dimerize(molecule, basis='monomer')
 
