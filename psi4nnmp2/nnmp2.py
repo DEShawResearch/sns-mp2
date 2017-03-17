@@ -2,6 +2,7 @@ import itertools
 import json
 from psi4 import core
 import psi4.driver.p4util as p4util
+import time
 
 from .eshlovlp import ESHLOVLPDecomposition
 from .wavefunctioncache import WavefunctionCache
@@ -13,11 +14,14 @@ from .resources import vminfo
 # DEBUG = True
 
 
+
 @psiopts('freeze_core desresval')
 def run_nnmp2(name, molecule, do_sapt=True, do_espx=True, do_intene=True, **kwargs):
     """Run the NN-MP2 calculation
 
     """
+    if len(kwargs) > 0:
+        raise ValueError('Unrecognized options: %s' % str(kwargs))
     core.tstart()
     # Force to c1
     molecule = molecule.clone()
@@ -32,6 +36,7 @@ def run_nnmp2(name, molecule, do_sapt=True, do_espx=True, do_intene=True, **kwar
 
     LOW = 'desavtz-psi-rev1'
     HIGH = 'desavqz-psi-rev1'
+
     #if DEBUG:
     #    LOW = 'desvdz-psi-rev1'
     #    HIGH = 'desvtz-psi-rev1'
@@ -48,9 +53,10 @@ def run_nnmp2(name, molecule, do_sapt=True, do_espx=True, do_intene=True, **kwar
         m2dlow  = c.compute('m2', 'd', 'low',  mp2=True)
         m1dhigh = c.compute('m1', 'd', 'high', mp2=True)
         m2dhigh = c.compute('m2', 'd', 'high', mp2=True)
-    if do_sapt or do_intene:
-        ddlow   = c.compute('d', 'd',  'low',  mp2=True)
+    if do_sapt and (not do_intene):
+        ddlow   = c.compute('d', 'd',  'low',  mp2=False)
     if do_intene:
+        ddlow = c.compute('d', 'd',  'low',  mp2=True)
         ddhigh  = c.compute('d', 'd',  'high', mp2=True)
 
     @psiopts(
@@ -106,7 +112,11 @@ def run_nnmp2(name, molecule, do_sapt=True, do_espx=True, do_intene=True, **kwar
         'SCF_TYPE DF',
         'BASIS %s' % LOW)
     def run_sapt():
-        dimer_wfn = ddlow.reference_wavefunction()
+        if ddlow.name() == 'SCF':
+            dimer_wfn = ddlow
+        else:
+            dimer_wfn = ddlow.reference_wavefunction()
+
         aux_basis = core.BasisSet.build(dimer_wfn.molecule(), "DF_BASIS_SAPT",
                                         core.get_global_option("DF_BASIS_SAPT"),
                                         "RIFIT", core.get_global_option("BASIS"))
@@ -132,7 +142,7 @@ def run_nnmp2(name, molecule, do_sapt=True, do_espx=True, do_intene=True, **kwar
         human_data.extend(sorted(format_espx_human(HIGH, espx_data).iteritems()))
     if do_sapt:
         sapt_data = run_sapt()
-        json_data.append(sapt_data)
+        json_data.append(format_sapt0_dict(ddlow, sapt_data))
         human_data.extend(sorted(sapt_data.iteritems()))
     if do_intene:
         json_data.append(format_intene_dict(m1dlow, m2dlow, ddlow))

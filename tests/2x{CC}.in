@@ -33,7 +33,7 @@ set {
 }
 
 
-energy('nnmp2')
+energy('nnmp2', do_intene=False, do_espx=False)
 
 # Referemce values from "dimer conformation 0" in
 # /d/en/donchev-4/QMDonchev2014/multimer_ecmp2/2x\{CC\}/ec/0/2x\{CC\}_0_intene.out 
