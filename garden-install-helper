@@ -2,7 +2,7 @@
 set -e
 name="psi4nnmp2"
 st_version="010"
-version="0.2.0"
+version="0.2.1"
 
 case $1 in
 --name)
@@ -28,6 +28,7 @@ cat >> $PREFIX/ModulesHelp <<EOF
 Release notes:
 0.1 - First cut
 0.2 - Add ability to turn off certain portions of the calculation
+0.2.1 - Fix sapt printing
 
 $name - Neural network MP2 plugin for PSI4
 Version $version

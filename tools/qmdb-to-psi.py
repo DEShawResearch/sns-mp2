@@ -19,7 +19,7 @@ def main():
         'raw/ccsd_ligand_nmer_solv',
         'raw/ccsd_nmer_solv2',
         'raw/eccc_ligand',
-    ), calculation_type='intene', raw=True)
+    ), calculation_type='intene', theory='CCSD(T)', raw=True)
 
 
     frameiter = itertools.chain.from_iterable(
