@@ -138,7 +138,7 @@ def run_nnmp2(name, molecule, do_sapt=True, do_espx=True, do_intene=True, **kwar
 
     if do_espx:
         espx_data, dimer_high_basis = run_espx()
-        json_data.append(format_espx_dict(molecule, dimer_high_basis, espx_data))
+        json_data.extend(format_espx_dict(molecule, dimer_high_basis, espx_data))
         human_data.extend(sorted(format_espx_human(HIGH, espx_data).iteritems()))
     if do_sapt:
         sapt_data = run_sapt()

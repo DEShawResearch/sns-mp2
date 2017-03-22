@@ -1,5 +1,14 @@
+'''
+This script queries CCSD(T) data in QMDB under the {'raw/ccsd_nmer2', 'raw/ccsd_ligand_nmer_solv',
+'raw/ccsd_nmer_solv2', 'raw/eccc_ligand'} project names, and generates Psi4 input files
+using the psi4nnmp2 plugin to calculate raw MP2 input quantities for the neural network.
+'''
 from __future__ import print_function, division
+import garden
+garden.load('ffde-monolith/0.2.14-st010/lib-python')
+
 import os
+import csv
 import sys
 import time
 import qmdb
@@ -12,7 +21,38 @@ import itertools
 from collections import Counter
 
 
+TEMPLATE = jinja2.Template('''generated = '{{now}}'
+frame_metadata = {{metadata}}
+refvals = {{refvals}}
+
+molecule {
+{% for frag in fragments -%}
+{{frag['charge']}} {{frag['spin_multiplicity']}}
+{% for i in frag['atoms'] -%}
+{{elements[i]}} {{'{:14.10f}'.format(xyz[i,0])}} {{'{:14.10f}'.format(xyz[i,1])}} {{'{:14.10f}'.format(xyz[i,2])}}
+{% endfor -%}
+{% if not loop.last %}--
+{% endif -%}
+{% endfor %}
+symmetry c1
+no_com
+no_reorient
+}
+
+set memory 7gb
+
+import psi4nnmp2
+energy('nnmp2', do_intene={{missing['intene']}}, do_espx={{missing['espx']}}, do_sapt={{missing['psi4_sapt0']}})
+''')
+
 def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('outdir', help='Directory in which to write output files')
+    args = p.parse_args()
+    execute(args, p)
+
+
+def execute(args, p):
     db = qmdb.QMDBPrototype(host='qmdb', port=6432)  # QMDB server in EN
     scans = db.get_scans(project_name__in=(
         'raw/ccsd_nmer2',
@@ -26,32 +66,36 @@ def main():
         (scan.get_frame(i) for i in range(len(scan)))
         for scan in scans)
 
-    import csv
+    count = itertools.count()
     with open('index.csv', 'w') as indx:
         csvw =  csv.writer(indx, dialect='excel', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         csvw.writerow(['index', 'system_name', 'frame_id', 'scan_id', 'system_id', 'effsize', 'filename', 'do_espx', 'do_sapt', 'do_intene'])
 
-        for i, frame in enumerate(frameiter):
-            p4in, metadata, work_to_do = generate_psi4in(frame)
+        for frame in frameiter:
+            try:
+                p4in, metadata, work_to_do = generate_psi4in(frame)
+            except ElementToHeavyError:
+                print('Too heavy! Skipping %s' % frame.scan.system.name)
+                continue
 
-            fn = os.path.join(metadata['system_name'], metadata['scan_name'], 
+            fn = os.path.join(args.outdir, metadata['system_name'], metadata['scan_name'], 
                 '%s-%s-%s.in' % (metadata['system_name'], metadata['scan_name'], metadata['frame_index']))
 
-            try:
-                os.makedirs(os.path.dirname(fn))
-            except OSError:
-                pass
-            with open(fn, 'w') as f:
-                f.write(p4in)
+            if (not work_to_do['espx']) and (not work_to_do['psi4_sapt0']) and (not work_to_do['intene']):
+                print('No work for %s' % fn)
+                continue
 
+
+            i = next(count)
+            writefile(fn, p4in)
             csvw.writerow([i, metadata['system_name'], metadata['frame_id'], metadata['scan_id'],
                            metadata['system_id'], metadata['effsize'], fn, work_to_do['espx'],
                            work_to_do['psi4_sapt0'], work_to_do['intene']])
-            indx.flush()
 
-            print('\r', i, end=' ')
-            sys.stdout.flush()
-
+            if i % 10 == 0:
+                print('\r', i, end=' ')
+                sys.stdout.flush()
+                indx.flush()
 
 def generate_refvals(frame):
     def mp2_interaction(scan):
@@ -121,6 +165,8 @@ def generate_refvals(frame):
             fields['SAPT SAME-SPIN DISP20 ENERGY'] = (getattr(s, 'Disp20 (SS)')[f.frame_index], f.frame_id)
             update_resources(f)
             have['psi4_sapt0'] = True
+        elif s.calculation_type == 'espx' and s.theory == 'CCSD(T)':
+            continue
         else:
             print(s.calculation_type, s.theory, s.basis_set)
 
@@ -131,42 +177,21 @@ def generate_refvals(frame):
 
 
 def generate_psi4in(frame):
-    t = jinja2.Template('''generated = '{{now}}'
-frame_metadata = {{metadata}}
-refvals = {{refvals}}
-
-molecule {
-{% for frag in fragments -%}
-{{frag['charge']}} {{frag['spin_multiplicity']}}
-{% for i in frag['atoms'] -%}
-{{elements[i]}} {{'{:14.10f}'.format(xyz[i,0])}} {{'{:14.10f}'.format(xyz[i,1])}} {{'{:14.10f}'.format(xyz[i,2])}}
-{% endfor -%}
-{% if not loop.last %}--
-{% endif -%}
-{% endfor %}
-symmetry c1
-no_com
-no_reorient
-}
-
-set memory 7gb
-
-import psi4nnmp2
-energy('nnmp2', do_intene={{missing['intene']}}, do_espx={{missing['espx']}}, do_sapt={{missing['psi4_sapt0']}})
-''')
+    element_types = frame.scan.metadata['element_types']
+    if contains_above_nickel(element_types):
+        raise ElementToHeavyError()
 
     refvals, resources, missing = generate_refvals(frame)
     metadata = dict(
             project_name=frame.scan.project_name,
             scan_id=frame.scan.id,
             scan_name=frame.scan.name,
-            system_name=frame.scan.system.name,
             system_id=frame.scan.system_id,
             frame_id=frame.frame_id,
             frame_index=frame.frame_index,
-            effsize=effsize(frame.scan.metadata['element_types']),
+            effsize=effsize(element_types),
     )
-    return t.render(
+    rendered_p4in = TEMPLATE.render(
         now=time.strftime("%Y-%m-%d %H:%M"),
         fragments=frame.scan.metadata['fragments'],
         elements=frame.scan.metadata['element_types'],
@@ -174,7 +199,10 @@ energy('nnmp2', do_intene={{missing['intene']}}, do_espx={{missing['espx']}}, do
         metadata=pformat(metadata, width=10),
         refvals=pformat({k: {'energy': v[0], 'frame_id': v[1]} for k, v in refvals.items()}),
         missing=missing,
-    ), metadata, missing
+    )
+    metadata['system_name'] = frame.scan.system.name
+
+    return rendered_p4in, metadata, missing
 
 
 def effsize(element_types):
@@ -193,6 +221,35 @@ def effsize(element_types):
         else:
             raise ValueError()
     return size
+
+
+def contains_above_nickel(element_types):
+    '''Psi4 doesn't support ECPs, which we want for
+    elements Cu and above. So we're going to skip.
+    '''
+    for s in (msys.ElementForAbbreviation(str(t)) for t in element_types):
+        if s > 28:
+            return True
+    return False
+
+
+def makedir(fn):
+    try:
+        os.makedirs(os.path.dirname(fn))
+    except OSError:
+        pass
+
+
+def writefile(fn, contents):
+    makedir(fn)
+    with open(fn, 'wb') as f:
+        f.write(contents)
+        if not contents.endswith('\n'):
+            f.write('\n')
+
+
+class ElementToHeavyError(Exception):
+    pass
 
 
 if __name__ == '__main__':
