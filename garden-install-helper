@@ -29,6 +29,7 @@ Release notes:
 0.1 - First cut
 0.2 - Add ability to turn off certain portions of the calculation
 0.2.1 - Fix sapt printing
+0.2.2 - Fix sapt reporting input.method == 'DF-MP2'. It now reports input.method == 'SAPT0'
 
 $name - Neural network MP2 plugin for PSI4
 Version $version

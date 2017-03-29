@@ -53,11 +53,14 @@ def format_sapt0_dict(dwfn, sapt_data):
                dHF2 +
                sapt_data['SAPT EXCH-IND20,R ENERGY'])
 
+    input = _format_input_block_dict(dwfn)
+    input['method'] = 'SAPT0'
+
     return {
         'calculation_type': 'sapt0',
         'error': False,
         'filename': os.path.abspath(core.outfile_name()),
-        'input': _format_input_block_dict(dwfn),
+        'input': input,
         'output': {
             'Disp20': sapt_data['SAPT DISP20 ENERGY'],
             'Disp20 (OS)': sapt_data['SAPT DISP20 ENERGY'] - sapt_data['SAPT SAME-SPIN DISP20 ENERGY'],
