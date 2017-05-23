@@ -21,7 +21,6 @@ symmetry c1
 
 set {
   memory 7gb
-  freeze_core true
 }
 
 

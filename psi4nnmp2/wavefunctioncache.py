@@ -10,12 +10,38 @@ from psi4.driver.molutil import constants
 from psi4 import extras
 import psi4.driver.p4util as p4util
 from .optstash import psiopts
+from frozencore import nfrozen_core
 
 
+# For the WavefunctionCache, a calculation is identified by this three-tuple.
+# V : The potential. This refers to the non-ghosted atoms. It is either
+#     'm1', 'm2', or 'd'.
+# B : The basis set location. This refers to the set of non-ghosted and ghosted
+#     atoms. It is either 'm1', 'm2', or 'd'
+# V : The basis set quality (i.e. zeta level). It's either 'low' or 'high'.
 calcid = namedtuple('calcid', ('V', 'B', 'Z'))
 
 
 class WavefunctionCache(object):
+    """The purpose of this WavefunctionCache class is to manage and accelerate
+    SCF calculations for a two-fragment system in which we will perform calculations
+    on the dimer and the two monomers in both the dimer-centered basis set and the
+    two monomer-centered basis sets. This cache also tries to help manage perfoming
+    all of the calculations mentioned above in each of two different basis set zeta
+    levels.
+
+    These calculations can be accelerated a bit by using a couple tricks:
+
+        - if we've already done a certain calculation in a small basis set, and now
+          need to do the same calculation in a larger basis set, we can "upcast". 
+        - if we've done two monomer calculations in the dimer basis set, we can
+          "stack" the two wavefunctions to form a guess for the dimer calculation
+          in the dimer basis set.
+        - if we've done a monomer calculation in a monomer basis set and now
+          want to do it in the dimer basis set, we can seed it from the converged
+          monomer calculation.
+
+    """
     def __init__(self, dimer, no_reuse=False, low='aug-cc-pvtz', high='aug-cc-pvtz'):
         self._original_path = os.path.abspath(os.curdir)
         self._d = dimer
@@ -40,6 +66,8 @@ class WavefunctionCache(object):
         os.chdir(self._original_path)
 
     def molecule(self, calc):
+        # type: (calcid,) -> Molecule
+        # Get the molecule object for the given calc.
         if calc.V == 'm1' and calc.B == 'm':
             return self._m1m
         if calc.V == 'm2' and calc.B == 'm':
@@ -53,10 +81,16 @@ class WavefunctionCache(object):
         raise ValueError(calc)
 
     def fmt_ns(self, calc):
+        # type: (calcid,) -> str
+        # Each calculation needs a namespace, which Psi4 core uses in the naming of the
+        # temporary files it creates.
         return '%s-%s-%s' % (calc.V, calc.B, calc.Z)
 
     def _init_ns(self, calc):
-        # Move into new namespace
+        # type: (calcid,)
+        # Move into new namespace, and create the relevant wavefunction guesses in
+        # the new namespace by copying files over from old namespaces and modifying
+        # them according to our heuristics (upcasting, stacking, adding ghosts)
         core.IO.set_default_namespace(self.fmt_ns(calc))
         if self.no_reuse:
             return
@@ -90,6 +124,9 @@ class WavefunctionCache(object):
         # print('nocast')
 
     def _init_upcast_C(self, oldcalc, calc):
+        # type: (calcid, calcid)
+        # Initialize a new namespace for `calc` with an opcast from `oldcalc`.
+
         # print('Upcasting %s->%s' % (oldcalc, calc))
         assert oldcalc.V == calc.V and oldcalc.B == calc.B
         core.set_local_option('SCF', 'GUESS', 'READ')
@@ -99,6 +136,8 @@ class WavefunctionCache(object):
         extras.register_numpy_file(newfn)
 
     def _fmt_mo_fn(self, calc):
+        # type: (calcid,) -> str
+        # Path to the molecular orbital file for a calc.
         return "%s.%s.npz" % (core.get_writer_file_prefix(self.fmt_ns(calc)), constants.PSIF_SCF_MOS)
 
     def _init_addghost_C(self, oldcalc, calc):
@@ -108,9 +147,6 @@ class WavefunctionCache(object):
         data = np.load(old_filename)
         Ca_occ = core.Matrix.np_read(data, "Ca_occ")
         Cb_occ = core.Matrix.np_read(data, "Cb_occ")
-        #oldwfn = self.wfn_cache[oldcalc]
-        #Ca_occ = oldwfn.Ca_subset('SO', 'OCC')
-        #Cb_occ = oldwfn.Cb_subset('SO', 'OCC')
 
         m1_nso = self.wfn_cache[('m1', 'm', oldcalc.Z)].nso()
         m2_nso = self.wfn_cache[('m2', 'm', oldcalc.Z)].nso()
@@ -227,6 +263,7 @@ class WavefunctionCache(object):
         molecule.set_name(self.fmt_ns(calc))
         basis = self.basis_sets[basis_quality]
 
+
         self._banner(calc, mp2, mp2_dm)
 
         optstash = p4util.optproc.OptionsState(
@@ -241,9 +278,13 @@ class WavefunctionCache(object):
                 'MP2_TYPE DF',
                 'BASIS %s' % basis,
                 'SCF SAVE_JK %s' % save_jk,
-                'ONEPDM TRUE'):
+                'ONEPDM TRUE',
+                'NUM_FROZEN_DOCC %d' % nfrozen_core(molecule),
+                ):
 
             wfn = scf_helper('scf', molecule=molecule)
+            assert nfrozen_core(molecule) == wfn.nfrzc()
+
             if mp2 and not mp2_dm:
                 wfn = run_dfmp2('df-mp2', molecule=molecule, ref_wfn=wfn)
             if mp2 and mp2_dm:

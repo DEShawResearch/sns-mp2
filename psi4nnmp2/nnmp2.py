@@ -11,17 +11,14 @@ from .format_output import format_intene_human, format_espx_human
 from .optstash import psiopts
 from .resources import vminfo
 
-# DEBUG = True
 
-
-
-@psiopts('freeze_core desresval')
 def run_nnmp2(name, molecule, do_sapt=True, do_espx=True, do_intene=True, **kwargs):
     """Run the NN-MP2 calculation
 
     """
     if len(kwargs) > 0:
         raise ValueError('Unrecognized options: %s' % str(kwargs))
+
     core.tstart()
     # Force to c1
     molecule = molecule.clone()
@@ -36,10 +33,6 @@ def run_nnmp2(name, molecule, do_sapt=True, do_espx=True, do_intene=True, **kwar
 
     LOW = 'desavtz-psi-rev1'
     HIGH = 'desavqz-psi-rev1'
-
-    #if DEBUG:
-    #    LOW = 'desvdz-psi-rev1'
-    #    HIGH = 'desvtz-psi-rev1'
 
     c = WavefunctionCache(molecule, low=LOW, high=HIGH)
     if do_sapt:
