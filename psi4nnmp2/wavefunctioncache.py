@@ -2,6 +2,7 @@ import os
 import shutil
 import itertools
 import numpy as np
+import time
 from collections import namedtuple
 from psi4 import core
 from psi4.driver.procrouting.proc import run_dfmp2, run_dfmp2_gradient
@@ -130,10 +131,63 @@ class WavefunctionCache(object):
         # print('Upcasting %s->%s' % (oldcalc, calc))
         assert oldcalc.V == calc.V and oldcalc.B == calc.B
         core.set_local_option('SCF', 'GUESS', 'READ')
-        oldfn = self._fmt_mo_fn(oldcalc)
+
+        new_data = self._basis_projection(oldcalc, calc)
         newfn = self._fmt_mo_fn(calc)
-        shutil.copy(oldfn, newfn)
+        np.savez(newfn, **new_data)
         extras.register_numpy_file(newfn)
+ 
+    def _basis_projection(self, oldcalc, newcalc):
+        # There's a bug in Psi4 upcasting between custom basis sets
+        # https://github.com/psi4/psi4/issues/719, so we do it ourselves.
+        start_time = time.time()
+        assert (oldcalc.B, oldcalc.Z) != (newcalc.B, newcalc.Z)
+
+        read_filename = self._fmt_mo_fn(oldcalc)
+        data = np.load(read_filename)
+        Ca_occ = core.Matrix.np_read(data, "Ca_occ")
+        Cb_occ = core.Matrix.np_read(data, "Cb_occ")
+        puream = int(data["BasisSet PUREAM"])
+
+
+        old_molecule = self.molecule(oldcalc)
+        with psiopts('BASIS %s' % self.basis_sets[oldcalc.Z]):
+            old_basis = core.BasisSet.build(old_molecule, "ORBITAL", self.basis_sets[oldcalc.Z], puream=puream)
+            if isinstance(old_basis, tuple) and len(old_basis) == 2:
+                # newer versions of psi return a second ECP basis
+                old_basis = old_basis[0]
+
+        new_molecule = self.molecule(newcalc)
+        with psiopts('BASIS %s' % self.basis_sets[newcalc.Z]):
+            new_basis = core.BasisSet.build(new_molecule, 'ORBITAL', self.basis_sets[newcalc.Z], puream=puream)
+
+            if isinstance(new_basis, tuple) and len(new_basis) == 2:
+                # newer versions of psi return a second ECP basis
+                base_wfn = core.Wavefunction(new_molecule, *new_basis)
+                new_basis = new_basis[0]
+            else:
+                base_wfn = core.Wavefunction(new_molecule, new_basis)
+
+        nalphapi = core.Dimension.from_list(data["nalphapi"])
+        nbetapi = core.Dimension.from_list(data["nbetapi"])
+        pCa = base_wfn.basis_projection(Ca_occ, nalphapi, old_basis, new_basis)
+        pCb = base_wfn.basis_projection(Cb_occ, nbetapi, old_basis, new_basis)
+
+        new_data = {}
+        new_data.update(pCa.np_write(None, prefix="Ca_occ"))
+        new_data.update(pCb.np_write(None, prefix="Cb_occ"))
+        new_data["reference"] = core.get_option('SCF', 'REFERENCE')
+        new_data["symmetry"] = new_molecule.schoenflies_symbol()
+        new_data["BasisSet"] = new_basis.name()
+        new_data["BasisSet PUREAM"] = puream
+
+        #core.print_out('\n Computing basis set projection from\n  ({calc1}) to ({calc2}) (elapsed={time:.2f})\n'.format(
+        #    calc1=self._display_name(oldcalc),
+        #    calc2=self._display_name(newcalc),
+        #    time=time.time()-start_time,
+        #))
+
+        return new_data
 
     def _fmt_mo_fn(self, calc):
         # type: (calcid,) -> str
@@ -143,39 +197,11 @@ class WavefunctionCache(object):
     def _init_addghost_C(self, oldcalc, calc):
         # print('Adding ghost %s->%s' % (oldcalc, calc))
 
-        old_filename = self._fmt_mo_fn(oldcalc)
-        data = np.load(old_filename)
-        Ca_occ = core.Matrix.np_read(data, "Ca_occ")
-        Cb_occ = core.Matrix.np_read(data, "Cb_occ")
-
-        m1_nso = self.wfn_cache[('m1', 'm', oldcalc.Z)].nso()
-        m2_nso = self.wfn_cache[('m2', 'm', oldcalc.Z)].nso()
-        m1_nalpha = self.wfn_cache[('m1', 'm', oldcalc.Z)].nalpha()
-        m2_nalpha = self.wfn_cache[('m2', 'm', oldcalc.Z)].nalpha()
-        m1_nbeta = self.wfn_cache[('m1', 'm', oldcalc.Z)].nbeta()
-        m2_nbeta = self.wfn_cache[('m2', 'm', oldcalc.Z)].nbeta()
-
-        if calc.V == 'm1':
-            Ca_occ_d = core.Matrix('Ca_occ', (m1_nso + m2_nso), m1_nalpha)
-            Ca_occ_d.np[:m1_nso, :] = Ca_occ.np[:, :]
-            Cb_occ_d = core.Matrix('Cb_occ', (m1_nso + m2_nso), m1_nbeta)
-            Cb_occ_d.np[:m1_nso, :] = Cb_occ.np[:, :]
-        elif calc.V == 'm2':
-            Ca_occ_d = core.Matrix('Ca_occ', (m1_nso + m2_nso), m2_nalpha)
-            Ca_occ_d.np[-m2_nso:, :] = Ca_occ.np[:, :]
-
-            Cb_occ_d = core.Matrix('Cb_occ', (m1_nso + m2_nso), m2_nbeta)
-            Cb_occ_d.np[-m2_nso:, :] = Cb_occ.np[:, :]
-
-        data_dict = dict(data)
-        data_dict.update(Ca_occ_d.np_write(prefix='Ca_occ'))
-        data_dict.update(Cb_occ_d.np_write(prefix='Cb_occ'))
-
-        write_filename = core.get_writer_file_prefix(self.fmt_ns(calc)) + ".180.npz"
-        np.savez(write_filename, **data_dict)
-        extras.register_numpy_file(write_filename)
         core.set_local_option('SCF', 'GUESS', 'READ')
-
+        new_data = self._basis_projection(oldcalc, calc)
+        newfn = self._fmt_mo_fn(calc)
+        np.savez(newfn, **new_data)
+        extras.register_numpy_file(newfn)
 
     def _init_stack_C(self, calc, oldcalc_m1, oldcalc_m2):
         assert oldcalc_m1.V == 'm1'
@@ -245,17 +271,22 @@ class WavefunctionCache(object):
             core.set_global_option("DF_INTS_IO", "NONE")
 
     def _banner(self, calc, mp2=False, mp2_dm=False):
-        mol_name, basis_center, basis_quality = calc
+        # type: (calcid, Optional[bool], Optional[bool])
+        core.print_out('\n')
+        p4util.banner(' Scheduling {fmt_calc} ({c}) '.format(
+            fmt_calc=self._display_name(calc),
+            c='MP2 density matrix' if mp2_dm else ('MP2' if mp2 else 'HF')))
+        core.print_out('\n')
 
+    def _display_name(self, calc):
+        # type: (calcid) -> string
+        mol_name, basis_center, basis_quality = calc
         mol_name = {'m1': 'Monomer A', 'm2': 'Monomer B', 'd': 'Dimer'}[mol_name]
         centered = {'m': 'monomer', 'd': 'dimer'}[basis_center]
         quality = self.basis_sets[basis_quality]
 
-        core.print_out('\n')
-        p4util.banner(' Scheduling {mol_name} in {quality} {centered}-centered basis ({c}) '.format(
-            mol_name=mol_name, quality=quality, centered=centered,
-            c='MP2 density matrix' if mp2_dm else ('MP2' if mp2 else 'HF')))
-        core.print_out('\n')
+        return '{mol_name} in {quality} {centered}-centered basis'.format(
+            mol_name=mol_name, quality=quality, centered=centered)
 
     def compute(self, mol_name='m1', basis_center='m', basis_quality='low', mp2=False, mp2_dm=False, save_jk=False):
         calc = calcid(mol_name, basis_center, basis_quality)
@@ -277,6 +308,8 @@ class WavefunctionCache(object):
                 'SCF_TYPE DF',
                 'MP2_TYPE DF',
                 'BASIS %s' % basis,
+                'DF_BASIS_SCF %s-JKFIT' % basis,
+                'DF_BASIS_MP2 %s-RI' % basis,
                 'SCF SAVE_JK %s' % save_jk,
                 'ONEPDM TRUE',
                 'NUM_FROZEN_DOCC %d' % nfrozen_core(molecule),
