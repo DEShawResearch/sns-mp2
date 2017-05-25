@@ -181,11 +181,12 @@ class WavefunctionCache(object):
         new_data["BasisSet"] = new_basis.name()
         new_data["BasisSet PUREAM"] = puream
 
-        #core.print_out('\n Computing basis set projection from\n  ({calc1}) to ({calc2}) (elapsed={time:.2f})\n'.format(
-        #    calc1=self._display_name(oldcalc),
-        #    calc2=self._display_name(newcalc),
-        #    time=time.time()-start_time,
-        #))
+        core.print_out('\n Computing basis set projection from {calc1} to {calc2} (elapsed={time:.2f})\n'.format(
+            calc1=self._display_name(oldcalc).lower(),
+            calc2=self._display_name(newcalc).lower(),
+            time=time.time()-start_time,
+        ))
+        print(np.sum(pCa.np))
 
         return new_data
 
@@ -197,11 +198,38 @@ class WavefunctionCache(object):
     def _init_addghost_C(self, oldcalc, calc):
         # print('Adding ghost %s->%s' % (oldcalc, calc))
 
+        old_filename = self._fmt_mo_fn(oldcalc)
+        data = np.load(old_filename)
+        Ca_occ = core.Matrix.np_read(data, "Ca_occ")
+        Cb_occ = core.Matrix.np_read(data, "Cb_occ")
+
+        m1_nso = self.wfn_cache[('m1', 'm', oldcalc.Z)].nso()
+        m2_nso = self.wfn_cache[('m2', 'm', oldcalc.Z)].nso()
+        m1_nalpha = self.wfn_cache[('m1', 'm', oldcalc.Z)].nalpha()
+        m2_nalpha = self.wfn_cache[('m2', 'm', oldcalc.Z)].nalpha()
+        m1_nbeta = self.wfn_cache[('m1', 'm', oldcalc.Z)].nbeta()
+        m2_nbeta = self.wfn_cache[('m2', 'm', oldcalc.Z)].nbeta()
+
+        if calc.V == 'm1':
+            Ca_occ_d = core.Matrix('Ca_occ', (m1_nso + m2_nso), m1_nalpha)
+            Ca_occ_d.np[:m1_nso, :] = Ca_occ.np[:, :]
+            Cb_occ_d = core.Matrix('Cb_occ', (m1_nso + m2_nso), m1_nbeta)
+            Cb_occ_d.np[:m1_nso, :] = Cb_occ.np[:, :]
+        elif calc.V == 'm2':
+            Ca_occ_d = core.Matrix('Ca_occ', (m1_nso + m2_nso), m2_nalpha)
+            Ca_occ_d.np[-m2_nso:, :] = Ca_occ.np[:, :]
+
+            Cb_occ_d = core.Matrix('Cb_occ', (m1_nso + m2_nso), m2_nbeta)
+            Cb_occ_d.np[-m2_nso:, :] = Cb_occ.np[:, :]
+
+        data_dict = dict(data)
+        data_dict.update(Ca_occ_d.np_write(prefix='Ca_occ'))
+        data_dict.update(Cb_occ_d.np_write(prefix='Cb_occ'))
+
+        write_filename = core.get_writer_file_prefix(self.fmt_ns(calc)) + ".180.npz"
+        np.savez(write_filename, **data_dict)
+        extras.register_numpy_file(write_filename)
         core.set_local_option('SCF', 'GUESS', 'READ')
-        new_data = self._basis_projection(oldcalc, calc)
-        newfn = self._fmt_mo_fn(calc)
-        np.savez(newfn, **new_data)
-        extras.register_numpy_file(newfn)
 
     def _init_stack_C(self, calc, oldcalc_m1, oldcalc_m2):
         assert oldcalc_m1.V == 'm1'
