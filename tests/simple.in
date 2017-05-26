@@ -1,0 +1,27 @@
+memory 7 gb
+import psi4nnmp2
+
+molecule {
+0 1
+He 0 0 0
+--
+He 2 0 0
+
+units angstrom
+no_reorient
+symmetry c1
+}
+
+energy('nnmp2')
+
+molecule = core.get_active_molecule()
+e_d = energy('ccsd(t)/aug-cc-pvqz', molecule=molecule)
+
+m1 = molecule.extract_subsets(1, 2)
+m2 = molecule.extract_subsets(2, 1)
+e_1 = energy('ccsd(t)/aug-cc-pvqz', molecule=m1)
+e_2 = energy('ccsd(t)/aug-cc-pvqz', molecule=m2)
+
+# print(e_d - e_1 - e_2)
+
+core.print_out('CCSD(T) Interaction Energy: %s' % (627.5095 * (e_d - e_1 - e_2)))

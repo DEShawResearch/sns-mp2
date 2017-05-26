@@ -186,7 +186,6 @@ class WavefunctionCache(object):
             calc2=self._display_name(newcalc).lower(),
             time=time.time()-start_time,
         ))
-        print(np.sum(pCa.np))
 
         return new_data
 

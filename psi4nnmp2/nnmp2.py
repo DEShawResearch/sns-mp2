@@ -174,3 +174,11 @@ def run_nnmp2(name, molecule, do_sapt=True, do_espx=True, do_intene=True, **kwar
   VmHWM:   %.2f MB
 
 ''' % vminfo()['VmHWM'])
+
+    from model import sns_mp2_model
+    e_sns_mp2 = sns_mp2_model(dict(human_data))
+    core.print_out('''
+--------------------------------------------------------
+    SNS-MP2 Interaction Energy: %s
+--------------------------------------------------------
+''' % e_sns_mp2)
