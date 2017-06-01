@@ -1,1 +1,1 @@
-psi4/1.1a2-desres03/bin
+psi4/1.1-desres03-c7/bin

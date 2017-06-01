@@ -1,19 +1,22 @@
 #!/bin/bash
 set -e
-name="psi4nnmp2"
-st_version="010"
-version="0.2.1"
+name="psi4-sns-mp2"
+PKG_VERSION="1.0"
+HELPER_VERSION=01c7
+VERSION=${PKG_VERSION}-${HELPER_VERSION}
+
+PYTHON=desres-python/2.7.13-01c7
 
 case $1 in
 --name)
         echo $name
         ;;
 --version)
-        echo $version
+        echo $VERSION
         ;;
 --install)
         mkdir -p $PREFIX/python
-        garden with -c -m simtools-dependencies/${st_version}/lib-python pip install . --install-option="--prefix=$PREFIX" \
+        garden with -c -m $PYTHON/bin pip install . --install-option="--prefix=$PREFIX" \
                 --install-option="--install-lib=$PREFIX/python" \
                 --install-option="--install-scripts=$PREFIX/bin"
 
@@ -30,8 +33,9 @@ Release notes:
 0.2 - Add ability to turn off certain portions of the calculation
 0.2.1 - Fix sapt printing
 0.2.2 - Fix sapt reporting input.method == 'DF-MP2'. It now reports input.method == 'SAPT0'
+1.0.0 - Incorporate neural network into plugin
 
-$name - Neural network MP2 plugin for PSI4
+$name - Spin-network-scaled MP2 plugin for PSI4
 Version $version
 
 EOF

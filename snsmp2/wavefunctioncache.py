@@ -57,7 +57,11 @@ class WavefunctionCache(object):
         core.IOManager.shared_object().set_specific_retention(constants.PSIF_DFSCF_BJ, True)
         os.chdir(core.IOManager.shared_object().get_default_path())
 
-    def __del__(self):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+
         for calc in (calcid(*x) for x in itertools.product(('m1', 'm2', 'd'), ('m', 'd'), ('low', 'high'))):
             core.IO.set_default_namespace(self.fmt_ns(calc))
             core.IOManager.shared_object().set_specific_retention(constants.PSIF_DFSCF_BJ, False)
