@@ -61,7 +61,10 @@ class WavefunctionCache(object):
         for calc in (calcid(*x) for x in itertools.product(('m1', 'm2', 'd'), ('m', 'd'), ('low', 'high'))):
             core.IO.set_default_namespace(self.fmt_ns(calc))
             core.IOManager.shared_object().set_specific_retention(constants.PSIF_DFSCF_BJ, False)
-        extras.clean_numpy_files()
+        try:
+            extras.clean_numpy_files()
+        except OSError:
+            pass
         extras.numpy_files = []
         core.clean()
         os.chdir(self._original_path)

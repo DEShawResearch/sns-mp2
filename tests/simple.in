@@ -1,9 +1,8 @@
 molecule {
-0 1
-He 0 0 0
+1 1
+Na 0 0 0
 --
-He 4 0 0
-
+He 2 0 0
 }
 
 import snsmp2
