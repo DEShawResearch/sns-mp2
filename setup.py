@@ -2,7 +2,6 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='sns-mp2',
-    packages=find_packages(),
-    
+    setup_requires=['pbr>=1.9', 'setuptools>=17.1'],
+    pbr=True,
 )

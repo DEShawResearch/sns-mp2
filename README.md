@@ -1,48 +1,29 @@
-Input File Example
-------------------
+Spin-network-scaled MP2 (SNS-MP2)
+---------------------------------
 
-    import psi4nnmp2  # required
-    
-    molecule {
-    0 1
-    C 1.31865000 1.24752700 2.83170400
-    C 2.13801100 0.22804800 2.03597400
-    H 0.40147400 1.51578800 2.28085700
-    H 1.90803500 2.16430200 3.00128900
-    H 1.03119900 0.82800000 3.81046800
-    H 1.54862600 -0.68872700 1.86639200
-    H 2.42546100 0.64757600 1.05721100
-    H 3.05518600 -0.04021300 2.58682200
-    --
-    0 1
-    C 0.68390400 2.35566100 -0.86482800
-    C 1.42861100 3.43933400 -0.08064700
-    H 1.31969300 1.96524600 -1.67720400
-    H -0.23838800 2.76826300 -1.30725700
-    H 0.41122000 1.51976500 -0.19884700
-    H 2.35090400 3.02673200 0.36178400
-    H 1.70129500 4.27523200 -0.74662600
-    H 0.79282300 3.82975100 0.73173200
-    
-    symmetry c1
-    no_com
-    no_reorient
-    }
-    
-    set {
-      memory 7gb
-    }
-    
-    energy('nnmp2')
+This module implements the SNS-MP2 method for computing dimer interaction
+energies described by McGibbon et al. [1]. It is implemented as a plugin
+for the Psi4 electronic structure method, and requires Psi4 version 1.1
+or greater.
+
+Installation
+------------
+- First, you need to install a working copy of Psi4 1.1 or greater. Head to
+  [their website](http://www.psicode.org/psi4manual/master/build_obtaining.html)
+  for installation instructions.
+- Next, install this plugin using the following commands
+```
+# Grab the path to the Python interpreter used by your copy of Psi4
+PSI4_PYTHON=$(head $(which psi4) -n 1 | sed -r 's/^.{2}//')
+
+# Install 
+PSI4_PYTHON -m pip install .
 
 
-Testing
--------
+```
 
-From the git checkout, to test against a garden version, use
 
-    pytest --psi4nnmp2_version psi4nnmp2/0.1.0/bin
 
-To test against the local version in the checkout, before installing, use
-
-    pytest --psi4nnmp2_version local
+[1]  R. T. McGibbon, A. G. Taube, A. G. Donchev, K. Siva, F. Fernandez, C. Hargus,
+      K.-H. Law, J.L. Klepeis, and D. E. Shaw. "Improving the accuracy of
+      Moller-Plesset perturbation theory with neural networks"

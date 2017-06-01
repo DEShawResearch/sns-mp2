@@ -14,14 +14,12 @@ from .desbasis import inject_desres_basis
 
 
 
-def run_nnmp2(name, molecule, do_sapt=True, do_espx=True, do_intene=True, **kwargs):
-    """Run the NN-MP2 calculation
-
+def run_sns_mp2(name, molecule, **kwargs):
+    """Run the SNS-MP2 calculation
     """
     if len(kwargs) > 0:
         raise ValueError('Unrecognized options: %s' % str(kwargs))
 
-    core.tstart()
     # Force to c1
     molecule = molecule.clone()
     molecule.reset_point_group('c1')
@@ -122,63 +120,12 @@ def run_nnmp2(name, molecule, do_sapt=True, do_espx=True, do_intene=True, **kwar
 
 
     # Run the three previously defined functions
-    json_data = []
-    human_data = []
+    espx_data, dimer_high_basis = run_espx()
+    sapt_data = run_sapt()
 
-    if do_espx:
-        espx_data, dimer_high_basis = run_espx()
-        json_data.extend(format_espx_dict(molecule, dimer_high_basis, espx_data))
-        human_data.extend(sorted(format_espx_human(HIGH, espx_data).iteritems()))
-    if do_sapt:
-        sapt_data = run_sapt()
-        json_data.append(format_sapt0_dict(ddlow, sapt_data))
-        human_data.extend(sorted(sapt_data.iteritems()))
-    if do_intene:
-        json_data.append(format_intene_dict(m1dlow, m2dlow, ddlow))
-        json_data.append(format_intene_dict(m1dhigh, m2dhigh, ddhigh))
-        human_data.extend(sorted(format_intene_human(c).iteritems()))
-
-    outlines = [
-        '',
-        '-' * 80,
-        '=' * 22 + ' DESRES ENERGY DECOMPOSITION (JSON) ' + '=' * 22,
-        '-' * 80,
-    ]
-    outlines.append(json.dumps(json_data))
-    outlines.extend(['-' * 80, '', ''])
-    core.print_out('\n'.join(outlines))
-
-
-    outlines = [
-        '',
-        '-' * 86,
-        '=' * 28 + '  DESRES ENERGY DECOMPOSITION ' + '=' * 28,
-        '-' * 28 + '            (a.u)             ' + '-' * 28,
-        '-' * 86,
-    ]
-    for k, v in human_data:
-        outlines.append('{:<60s} {:24.16f}'.format(k + ':', v))
-    outlines.extend(['-' * 86, ''])
-
-    core.print_out('\n'.join(outlines))
-    core.tstop()
-
-    for k, v in human_data:
-        core.set_variable(k, v)
-
-
-    core.print_out('''
-  ---------------------
-  ==> NN-MP2 Memory <==
-  ---------------------
-  VmHWM:   %.2f MB
-
-''' % vminfo()['VmHWM'])
+    data = format_espx_human(HIGH, espx_data)
+    data.update(sapt_data)
+    data.update(format_intene_human(c))
 
     from model import sns_mp2_model
-    e_sns_mp2 = sns_mp2_model(dict(human_data))
-    core.print_out('''
---------------------------------------------------------
-    SNS-MP2 Interaction Energy: %s
---------------------------------------------------------
-''' % e_sns_mp2)
+    return sns_mp2_model(data)
