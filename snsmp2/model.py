@@ -73,7 +73,7 @@ def sns_mp2_model(input_fields, n=10000, dropout=True, random_seed=0):
 
                                   SNS-MP2
 
-    R. T. McGibbon, A. G. Taube, A. G. Donchev, K. Siva, F. Fernandez, C. Hargus,
+    R. T. McGibbon, A. G. Taube, A. G. Donchev, K. Siva, F. Hernandez, C. Hargus,
       K.-H. Law, J.L. Klepeis, and D. E. Shaw. "Improving the accuracy of
       Moller-Plesset perturbation theory with neural networks"
 
