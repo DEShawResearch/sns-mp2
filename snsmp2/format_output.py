@@ -73,44 +73,44 @@ def format_espx_human(basis, espx_data):
     }
 
 
-def format_sapt0_dict(dwfn, sapt_data):
+# def format_sapt0_dict(dwfn, sapt_data):
 
-    dHF2 = sapt_data['SAPT HF TOTAL ENERGY'] - (
-        sapt_data['SAPT ELST10,R ENERGY'] + 
-        sapt_data['SAPT EXCH10 ENERGY'] + 
-        sapt_data['SAPT IND20,R ENERGY'] + 
-        sapt_data['SAPT EXCH-IND20,R ENERGY'])
-    tot_ind = (sapt_data['SAPT IND20,R ENERGY'] + 
-               dHF2 +
-               sapt_data['SAPT EXCH-IND20,R ENERGY'])
+#     dHF2 = sapt_data['SAPT HF TOTAL ENERGY'] - (
+#         sapt_data['SAPT ELST10,R ENERGY'] + 
+#         sapt_data['SAPT EXCH10 ENERGY'] + 
+#         sapt_data['SAPT IND20,R ENERGY'] + 
+#         sapt_data['SAPT EXCH-IND20,R ENERGY'])
+#     tot_ind = (sapt_data['SAPT IND20,R ENERGY'] + 
+#                dHF2 +
+#                sapt_data['SAPT EXCH-IND20,R ENERGY'])
 
-    input = _format_input_block_dict(dwfn)
-    input['method'] = 'SAPT0'
+#     input = _format_input_block_dict(dwfn)
+#     input['method'] = 'SAPT0'
 
-    return {
-        'calculation_type': 'sapt0',
-        'error': False,
-        'filename': os.path.abspath(core.outfile_name()),
-        'input': input,
-        'output': {
-            'Disp20': sapt_data['SAPT DISP20 ENERGY'],
-            'Disp20 (OS)': sapt_data['SAPT DISP20 ENERGY'] - sapt_data['SAPT SAME-SPIN DISP20 ENERGY'],
-            'Disp20 (SS)': sapt_data['SAPT SAME-SPIN DISP20 ENERGY'],
-            'Exch-Disp20': sapt_data['SAPT EXCH-DISP20 ENERGY'],
-            'Exch-Disp20 (SS)': sapt_data['SAPT SAME-SPIN EXCH-DISP20 ENERGY'],
-            'Exch-Disp20 (OS)': sapt_data['SAPT EXCH-DISP20 ENERGY'] - sapt_data['SAPT SAME-SPIN EXCH-DISP20 ENERGY'],            
-            'Dispersion': sapt_data['SAPT DISP20 ENERGY'] + sapt_data['SAPT EXCH-DISP20 ENERGY'],
-            'Electrostatics': sapt_data['SAPT ELST10,R ENERGY'],
-            'Elst10,r': sapt_data['SAPT ELST10,R ENERGY'],
-            'Exch10': sapt_data['SAPT EXCH10 ENERGY'],
-            'Exch10(S^2)': sapt_data['SAPT EXCH10(S^2) ENERGY'],
-            'Exchange': sapt_data['SAPT EXCH10 ENERGY'],
-            'Ind20,r': sapt_data['SAPT IND20,R ENERGY'],
-            'Exch-Ind20,r': sapt_data['SAPT EXCH-IND20,R ENERGY'],
-            'delta HF,r (2)': dHF2,
-            'Induction': tot_ind,
-        }
-    }
+#     return {
+#         'calculation_type': 'sapt0',
+#         'error': False,
+#         'filename': os.path.abspath(core.outfile_name()),
+#         'input': input,
+#         'output': {
+#             'Disp20': sapt_data['SAPT DISP20 ENERGY'],
+#             'Disp20 (OS)': sapt_data['SAPT DISP20 ENERGY'] - sapt_data['SAPT SAME-SPIN DISP20 ENERGY'],
+#             'Disp20 (SS)': sapt_data['SAPT SAME-SPIN DISP20 ENERGY'],
+#             'Exch-Disp20': sapt_data['SAPT EXCH-DISP20 ENERGY'],
+#             'Exch-Disp20 (SS)': sapt_data['SAPT SAME-SPIN EXCH-DISP20 ENERGY'],
+#             'Exch-Disp20 (OS)': sapt_data['SAPT EXCH-DISP20 ENERGY'] - sapt_data['SAPT SAME-SPIN EXCH-DISP20 ENERGY'],            
+#             'Dispersion': sapt_data['SAPT DISP20 ENERGY'] + sapt_data['SAPT EXCH-DISP20 ENERGY'],
+#             'Electrostatics': sapt_data['SAPT ELST10,R ENERGY'],
+#             'Elst10,r': sapt_data['SAPT ELST10,R ENERGY'],
+#             'Exch10': sapt_data['SAPT EXCH10 ENERGY'],
+#             'Exch10(S^2)': sapt_data['SAPT EXCH10(S^2) ENERGY'],
+#             'Exchange': sapt_data['SAPT EXCH10 ENERGY'],
+#             'Ind20,r': sapt_data['SAPT IND20,R ENERGY'],
+#             'Exch-Ind20,r': sapt_data['SAPT EXCH-IND20,R ENERGY'],
+#             'delta HF,r (2)': dHF2,
+#             'Induction': tot_ind,
+#         }
+#     }
 
 
 def format_espx_dict(molecule, basis, espx_data):

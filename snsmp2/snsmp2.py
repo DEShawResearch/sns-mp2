@@ -38,7 +38,7 @@ import time
 
 from .eshlovlp import ESHLOVLPDecomposition
 from .wavefunctioncache import WavefunctionCache
-from .format_output import format_espx_dict, format_intene_dict, format_sapt0_dict
+from .format_output import format_espx_dict, format_intene_dict
 from .format_output import format_intene_human, format_espx_human
 from .optstash import psiopts
 from .resources import vminfo
@@ -62,8 +62,8 @@ def run_sns_mp2(name, molecule, **kwargs):
     if nfrag != 2:
         raise ValueError('NN-MP2 requires active molecule to have 2 fragments, not %s.' % (nfrag))
 
-    LOW = 'desavtz-rev5'
-    HIGH = 'desavqz-rev5'
+    LOW = 'desavtz'
+    HIGH = 'desavqz'
     inject_desres_basis()
 
     with WavefunctionCache(molecule, low=LOW, high=HIGH) as c:

@@ -144,7 +144,7 @@ def sns_mp2_model(input_fields, n=10000, dropout=True, random_seed=0):
     random = np.random.RandomState(random_seed)
     input_nn_data, final_layer_data = prepare_input_vector(input_fields)
 
-    f = np.load(os.path.join(os.path.dirname(__file__), 'weights.0061900.npz'))
+    f = np.load(os.path.join(os.path.dirname(__file__), 'weights.npz'))
     layers = [
         ('hidden_0', np.tanh, 0.025),
         ('hidden_1', np.tanh, 0.025),   
