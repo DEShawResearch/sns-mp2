@@ -43,7 +43,7 @@ from psi4.driver.molutil import constants
 from psi4 import extras
 import psi4.driver.p4util as p4util
 from .optstash import psiopts
-from frozencore import nfrozen_core
+from .frozencore import nfrozen_core
 
 
 # For the WavefunctionCache, a calculation is identified by this three-tuple.
@@ -166,15 +166,19 @@ class WavefunctionCache(object):
     def _init_upcast_C(self, oldcalc, calc):
         # type: (calcid, calcid)
         # Initialize a new namespace for `calc` with an opcast from `oldcalc`.
-
-        # print('Upcasting %s->%s' % (oldcalc, calc))
         assert oldcalc.V == calc.V and oldcalc.B == calc.B
         core.set_local_option('SCF', 'GUESS', 'READ')
-
         new_data = self._basis_projection(oldcalc, calc)
         newfn = self._fmt_mo_fn(calc)
         np.savez(newfn, **new_data)
+
         extras.register_numpy_file(newfn)
+
+    def _init_upcast_C_simple(self, oldcalc, calc):
+        assert oldcalc.V == calc.V and oldcalc.B == calc.B
+        core.set_local_option('SCF', 'GUESS', 'READ')
+        shutil.copy(self._fmt_mo_fn(oldcalc), self._fmt_mo_fn(calc))
+        extras.register_numpy_file(self._fmt_mo_fn(calc))
  
     def _basis_projection(self, oldcalc, newcalc):
         # There's a bug in Psi4 upcasting between custom basis sets
@@ -187,7 +191,6 @@ class WavefunctionCache(object):
         Ca_occ = core.Matrix.np_read(data, "Ca_occ")
         Cb_occ = core.Matrix.np_read(data, "Cb_occ")
         puream = int(data["BasisSet PUREAM"])
-
 
         old_molecule = self.molecule(oldcalc)
         with psiopts('BASIS %s' % self.basis_sets[oldcalc.Z]):
@@ -225,6 +228,11 @@ class WavefunctionCache(object):
             calc2=self._display_name(newcalc).lower(),
             time=time.time()-start_time,
         ))
+
+        # Workaround for https://github.com/psi4/psi4/pull/750
+        for key, value in new_data.items():
+            if isinstance(value, np.ndarray) and value.flags['OWNDATA'] == False:
+                new_data[key] = np.copy(value)
 
         return new_data
 

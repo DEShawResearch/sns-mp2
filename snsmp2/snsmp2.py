@@ -43,6 +43,7 @@ from .format_output import format_intene_human, format_espx_human
 from .optstash import psiopts
 from .resources import vminfo
 from .desbasis import inject_desres_basis
+from .model import sns_mp2_model
 
 
 def run_sns_mp2(name, molecule, **kwargs):
@@ -62,8 +63,8 @@ def run_sns_mp2(name, molecule, **kwargs):
     if nfrag != 2:
         raise ValueError('NN-MP2 requires active molecule to have 2 fragments, not %s.' % (nfrag))
 
-    LOW = 'desavtz'
-    HIGH = 'desavqz'
+    LOW = 'DESAVTZ'
+    HIGH = 'DESAVQZ'
     inject_desres_basis()
 
     with WavefunctionCache(molecule, low=LOW, high=HIGH) as c:
@@ -92,7 +93,7 @@ def run_sns_mp2(name, molecule, **kwargs):
 
             dimer_basis = ddhigh.basisset()
             aux_basis = core.BasisSet.build(molecule, "DF_BASIS_SCF",
-                                            HIGH+'-jkfit', "JKFIT", HIGH)
+                                            HIGH+'-JKFIT', "JKFIT", HIGH)
 
             decomp = ESHLOVLPDecomposition(
                 m1_basis=m1mhigh.basisset(),
@@ -158,5 +159,4 @@ def run_sns_mp2(name, molecule, **kwargs):
     data.update(sapt_data)
     data.update(format_intene_human(c))
 
-    from model import sns_mp2_model
     return sns_mp2_model(data)
