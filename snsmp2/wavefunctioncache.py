@@ -173,12 +173,6 @@ class WavefunctionCache(object):
         np.savez(newfn, **new_data)
 
         extras.register_numpy_file(newfn)
-
-    def _init_upcast_C_simple(self, oldcalc, calc):
-        assert oldcalc.V == calc.V and oldcalc.B == calc.B
-        core.set_local_option('SCF', 'GUESS', 'READ')
-        shutil.copy(self._fmt_mo_fn(oldcalc), self._fmt_mo_fn(calc))
-        extras.register_numpy_file(self._fmt_mo_fn(calc))
  
     def _basis_projection(self, oldcalc, newcalc):
         # There's a bug in Psi4 upcasting between custom basis sets
