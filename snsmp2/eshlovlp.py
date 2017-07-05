@@ -50,7 +50,7 @@ class ESHLOVLPDecomposition(object):
 
     def _initialize_jk(self, basis, aux_basis, do_J=True, do_K=True):
         jk = core.JK.build(basis, aux_basis)
-        jk.set_memory(int(float(core.get_global_option("SCF_MEM_SAFETY_FACTOR")) * core.get_memory()) / 8)
+        jk.set_memory(int(float(core.get_global_option("SCF_MEM_SAFETY_FACTOR")) * core.get_memory() / 8))
         jk.set_do_J(do_J)
         jk.set_do_K(do_K)
         jk.print_header()
