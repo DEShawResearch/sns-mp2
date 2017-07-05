@@ -159,4 +159,9 @@ def run_sns_mp2(name, molecule, **kwargs):
     data.update(format_intene_human(c))
 
     from model import sns_mp2_model
-    return sns_mp2_model(data)
+    core.tstart()
+    e, lines = sns_mp2_model(data)
+    core.print_out(lines)
+    core.tstop()
+
+    return e

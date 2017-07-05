@@ -29,8 +29,10 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-import psi4
-import psi4.driver
-from .snsmp2 import run_sns_mp2
-psi4.driver.procedures['energy']['sns-mp2'] = run_sns_mp2
+try:
+    import psi4
+    import psi4.driver
+    from .snsmp2 import run_sns_mp2
+    psi4.driver.procedures['energy']['sns-mp2'] = run_sns_mp2
+except ImportError:
+    pass

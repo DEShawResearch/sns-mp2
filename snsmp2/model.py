@@ -31,11 +31,12 @@
 
 
 import os
+import itertools
 import numpy as np
 from scipy.optimize import brentq
 from scipy.stats import laplace, rv_continuous
 
-from psi4 import core
+# from psi4 import core
 
 HARTREE2KCAL = 627.509474
 KCAL2MEH = 1.0 / (HARTREE2KCAL / 1000.)
@@ -99,8 +100,8 @@ def prepare_input_vector(input_fields):
 
 
 def sns_mp2_model(input_fields, n=10000, dropout=True, random_seed=0):
-    core.tstart()
-    core.print_out('''
+    # core.tstart()
+    lines = ['''
 //===================================================================================//
 
                                   SNS-MP2
@@ -138,7 +139,7 @@ def sns_mp2_model(input_fields, n=10000, dropout=True, random_seed=0):
     DF-MP2/desavtz CP Interaction Energy:                        {DF-MP2/desavtz CP Interaction Energy} [a.u.]
     DF-MP2/desavtz CP Opposite-Spin Interaction Energy:          {DF-MP2/desavtz CP Opposite-Spin Interaction Energy} [a.u.]
     DF-MP2/desavtz CP Same-Spin Interaction Energy:              {DF-MP2/desavtz CP Same-Spin Interaction Energy} [a.u.]
-'''.format(**input_fields))
+'''.format(**input_fields)]
 
 
     random = np.random.RandomState(random_seed)
@@ -180,24 +181,42 @@ def sns_mp2_model(input_fields, n=10000, dropout=True, random_seed=0):
 
     lm = laplace_mixture()
     lm._set_params(sns_mp2_energy, b)
-    format_results(output_data, lm)
-    core.tstop()
+    lines.append(format_results(output_data, lm))
+    # core.tstop()
 
-    return np.mean(sns_mp2_energy)
+    return np.mean(sns_mp2_energy), '\n'.join(lines)
 
 
 def format_results(spin_coefficients, laplace_mixture):
     def determine_predictive_interval(q=0.95):
         lm = laplace_mixture
-        lower_bound = brentq(lambda x: lm.cdf(x) - (0.5 - q/2), a=lm.mean() - 3*np.max(lm._scales), b=lm.mean())
-        upper_bound = brentq(lambda x: lm.cdf(x) - (0.5 + q/2), a=lm.mean(), b=lm.mean() + 3*np.max(lm._scales))
+        lowfunc = lambda x:  lm.cdf(x) - (0.5 - q/2)
+        highfunc = lambda x: lm.cdf(x) - (0.5 + q/2)
+        scale = np.mean(lm._scales)
+
+
+        # Find a lower bound and upper bound for the lower and upper edges of the predictive interval
+        # so that we can bracket the search for brentq
+
+        N_MAX_ITERS = 100  # just to guard so we can't get an infinite loop
+        guess_iters = itertools.count(0)
+        guess_lb = lm.mean() - 3*scale
+        while next(guess_iters) < N_MAX_ITERS and lowfunc(guess_lb) > 0:
+            guess_lb -= scale
+
+        guess_hb = lm.mean() + 3*scale
+        while next(guess_iters) < N_MAX_ITERS and highfunc(guess_hb) < 0:
+            guess_hb += scale
+
+        lower_bound = brentq(lowfunc, a=guess_lb, b=lm.mean())
+        upper_bound = brentq(highfunc, a=lm.mean(), b=guess_hb)
         return lower_bound, upper_bound
 
     lower_bound_kcal, upper_bound_kcal = determine_predictive_interval(q=0.95)
     mean_kcal = laplace_mixture.mean()
 
 
-    core.print_out('''
+    return '''
     SNS-MP2 Spin Results
     --------------------
 
@@ -222,7 +241,7 @@ def format_results(spin_coefficients, laplace_mixture):
     lower_bound_kcal=lower_bound_kcal,
     upper_bound_kcal=upper_bound_kcal,
     lower_bound_meh=lower_bound_kcal * KCAL2MEH,
-    upper_bound_meh=upper_bound_kcal * KCAL2MEH))
+    upper_bound_meh=upper_bound_kcal * KCAL2MEH)
 
 
 class laplace_mixture(rv_continuous):
