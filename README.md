@@ -38,9 +38,29 @@ import snsmp2
 energy('sns-mp2')
 ```
 
+
+Copy the contents to a file called `first-cak.dat.`. To run the calculation,
+execute
+
+```
+$ psi4 first-calc.dat
+```
+
+After it finishes, you can find the results in `first-calc.out`.
+
+
+
+
+References
+----------
+[1]  R. T. McGibbon, A. G. Taube, A. G. Donchev, K. Siva, F. Fernandez, C. Hargus,
+      K.-H. Law, J.L. Klepeis, and D. E. Shaw. "Improving the accuracy of
+      Moller-Plesset perturbation theory with neural networks"
+
 License
 -------
 
+```
                       SNS-MP2 LICENSE AGREEMENT
 
 Copyright 2017, D. E. Shaw Research. All rights reserved.
@@ -71,25 +91,8 @@ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
 
 The file `snsmp2/contextdecorator.py` is copyright Michael Foord and is
 redistributed under the 3-clause BSD license (see `nsmp2/contextdecorator.py`
 for details).
-
-Copy the contents to a file called `first-cak.dat.`. To run the calculation,
-execute
-
-```
-$ psi4 first-calc.dat
-```
-
-After it finishes, you can find the results in `first-calc.out`.
-
-
-
-
-References
-----------
-[1]  R. T. McGibbon, A. G. Taube, A. G. Donchev, K. Siva, F. Fernandez, C. Hargus,
-      K.-H. Law, J.L. Klepeis, and D. E. Shaw. "Improving the accuracy of
-      Moller-Plesset perturbation theory with neural networks"
