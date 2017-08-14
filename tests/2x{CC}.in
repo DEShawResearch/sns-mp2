@@ -33,11 +33,7 @@ set {
 }
 
 
-energy('nnmp2', do_intene=False, do_espx=False)
-
-# Referemce values from "dimer conformation 0" in
-# /d/en/donchev-4/QMDonchev2014/multimer_ecmp2/2x\{CC\}/ec/0/2x\{CC\}_0_intene.out 
-# /d/en/donchev-4/QMDonchev2014/multimer_ecmp2/2x\{CC\}/ec/0/2x\{CC\}_0_espx.out
+energy('nnmp2')
 
 compare_values(get_variable('DF-HF/desavqz-psi-rev1 Density Matrix Overlap'),             2.57199e-02, 6, "ovlhf")
 compare_values(get_variable('DF-HF/desavqz-psi-rev1 Electrostatic Interaction Energy'),  -1.07132e-03, 6, "eshf")
