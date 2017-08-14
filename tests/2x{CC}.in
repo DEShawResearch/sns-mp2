@@ -1,4 +1,4 @@
-import psi4nnmp2
+import snsmp2
 
 molecule {
 0 1
@@ -29,7 +29,6 @@ no_reorient
 
 set {
   memory 7gb
-  freeze_core true
 }
 
 
