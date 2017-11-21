@@ -44,7 +44,7 @@ from .format_output import format_intene_human, format_espx_human
 from .optstash import psiopts
 from .resources import vminfo
 from .desbasis import inject_desres_basis
-from .model import sns_mp2_model
+from .model import sns_mp2_model, KCAL2MEH
 
 
 def run_sns_mp2(name, molecule, **kwargs):
@@ -162,6 +162,7 @@ def run_sns_mp2(name, molecule, **kwargs):
 
     core.tstart()
     e, lines = sns_mp2_model(data)
+    core.set_variable('SNS-MP2 TOTAL ENERGY', e * KCAL2MEH * 0.001)
     core.print_out(lines)
     core.tstop()
 
