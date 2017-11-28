@@ -173,7 +173,8 @@ class WavefunctionCache(object):
         newfn = self._fmt_mo_fn(calc)
         np.savez(newfn, **new_data)
 
-        extras.register_numpy_file(newfn)
+        psi_scratch = core.IOManager.shared_object().get_default_path()
+        extras.register_numpy_file(os.path.join(psi_scratch, newfn))
  
     def _basis_projection(self, oldcalc, newcalc):
         # There's a bug in Psi4 upcasting between custom basis sets
@@ -234,7 +235,8 @@ class WavefunctionCache(object):
     def _fmt_mo_fn(self, calc):
         # type: (calcid,) -> str
         # Path to the molecular orbital file for a calc.
-        return "%s.%s.npz" % (core.get_writer_file_prefix(self.fmt_ns(calc)), constants.PSIF_SCF_MOS)
+        fname = os.path.split(os.path.abspath(core.get_writer_file_prefix(self.fmt_ns(calc))))[1]
+        return "%s.%s.npz" % (fname, constants.PSIF_SCF_MOS)
 
     def _init_addghost_C(self, oldcalc, calc):
         # print('Adding ghost %s->%s' % (oldcalc, calc))
@@ -267,7 +269,8 @@ class WavefunctionCache(object):
         data_dict.update(Ca_occ_d.np_write(prefix='Ca_occ'))
         data_dict.update(Cb_occ_d.np_write(prefix='Cb_occ'))
 
-        write_filename = core.get_writer_file_prefix(self.fmt_ns(calc)) + ".180.npz"
+        psi_scratch = core.IOManager.shared_object().get_default_path()
+        write_filename = os.path.join(psi_scratch, os.path.split(os.path.abspath(core.get_writer_file_prefix(self.fmt_ns(calc))))[1] + ".180.npz")
         np.savez(write_filename, **data_dict)
         extras.register_numpy_file(write_filename)
         core.set_local_option('SCF', 'GUESS', 'READ')
