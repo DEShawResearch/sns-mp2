@@ -30,6 +30,8 @@
 # OR TORT (INCLUDINGNEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE AND/OR DATA, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+__all__ = ['__version__']
+
 try:
     import psi4
     import psi4.driver
@@ -37,3 +39,18 @@ try:
     psi4.driver.procedures['energy']['sns-mp2'] = run_sns_mp2
 except ImportError:
     pass
+
+
+def _get_version():
+    import pkg_resources
+    resource = pkg_resources.Requirement.parse('snsmp2')
+    provider = pkg_resources.get_provider(resource)
+    return provider.version
+
+try:
+    __version__ = _get_version()
+except ImportError:
+    __version__ = ''
+    pass
+
+del _get_version
