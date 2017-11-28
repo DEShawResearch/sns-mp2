@@ -1,24 +1,24 @@
 #                       SNS-MP2 LICENSE AGREEMENT
-# 
+#
 # Copyright 2017, D. E. Shaw Research. All rights reserved.
-# 
+#
 # Redistribution and use of (1) the SNS-MP2 software in source and binary forms
 # and (2) the associated electronic structure data released with the software,
 # with or without modification, is permitted provided that the following
 # conditions are met:
-# 
+#
 #     * Redistributions of source code and the associated data must retain the
 #     above copyright notice, this list of conditions, and the following
 #     disclaimer.
-# 
-#     * Redistributions in binary form must reproduce the above copyright 
+#
+#     * Redistributions in binary form must reproduce the above copyright
 #     notice, this list of conditions, and the following disclaimer in the
 #     documentation and/or other materials provided with the distribution.
-# 
+#
 # Neither the name of D. E. Shaw Research nor the names of its contributors may
 # be used to endorse or promote products derived from this software without
 # specific prior written permission.
-# 
+#
 # THIS SOFTWARE AND DATA ARE PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
 # THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -31,35 +31,16 @@
 # OF THIS SOFTWARE AND/OR DATA, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import pytest
-THISDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def pytest_addoption(parser):
-    parser.addoption("--psi4nnmp2_version", default='',
-                     help=("Version of psi4nnmp2 to test "
-                           "Available values: 'local', or "
-                           "a garden tag"))
+    parser.addoption("--cmd-prefix", default='')
+    parser.addoption("--pythonpath-append", default='')
+
 
 def pytest_generate_tests(metafunc):
-    psi4nnmp2_version = metafunc.config.option.psi4nnmp2_version
-    if not psi4nnmp2_version:
-        psi4nnmp2_version = 'local'
-    metafunc.parametrize("psi4nnmp2_version", [psi4nnmp2_version],
-                         scope='session')
-
-
-@pytest.yield_fixture(scope='session')
-def pythonpath_append(psi4nnmp2_version):
-    env = os.environ.copy()
-    if psi4nnmp2_version == 'local':
-        return os.path.join(THISDIR, '..')
-    return None
-
-@pytest.yield_fixture(scope='session')
-def cmd_prefix(psi4nnmp2_version):
-    if psi4nnmp2_version == 'local':
-        prereqs = (s.strip() for s in open(os.path.join(
-            THISDIR, '..', 'garden-prereq.txt')).readlines())
-        return('garden with -m ' + ' -m '.join(prereqs)).split()
-
-    return ['garden', 'with', '-c', '-m', psi4nnmp2_version]
+    cmd_prefix = metafunc.config.option.cmd_prefix or ''
+    pythonpath_append = metafunc.config.option.pythonpath_append or ''
+    metafunc.parametrize(
+        "cmd_prefix,pythonpath_append", [(cmd_prefix, pythonpath_append)],
+        scope='session')

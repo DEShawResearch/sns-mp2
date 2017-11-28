@@ -35,9 +35,9 @@ import os
 import sys
 import time
 import pytest
-import garden
 import subprocess
 import multiprocessing
+import shlex
 
 THISDIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -48,7 +48,7 @@ THISDIR = os.path.abspath(os.path.dirname(__file__))
 ])
 def test_generator(inputfn, cmd_prefix, pythonpath_append):
     fullname = os.path.join(THISDIR, inputfn)
-    cmd = cmd_prefix + ['psi4', '-n', str(multiprocessing.cpu_count()), fullname, 'stdout']
+    cmd = shlex.split(cmd_prefix) + ['psi4', '-n', str(multiprocessing.cpu_count()), fullname, 'stdout']
     with open(os.path.join(THISDIR, 'testlog.out'), 'a', 0) as logfile:
         assert backtick(cmd, logfile, pythonpath_append=pythonpath_append) == 0
 
@@ -105,4 +105,4 @@ def teardown_module(module):
 
 
 if __name__ == '__main__':
-    pytest.main(['--verbose', '--psi4nnmp2_version=local'])
+    pytest.main()
