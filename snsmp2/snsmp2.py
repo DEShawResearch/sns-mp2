@@ -31,6 +31,7 @@
 # OF THIS SOFTWARE AND/OR DATA, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+import os
 import itertools
 import json
 from psi4 import core
@@ -163,6 +164,9 @@ def run_sns_mp2(name, molecule, **kwargs):
     core.tstart()
     e, lines = sns_mp2_model(data)
     core.set_variable('SNS-MP2 TOTAL ENERGY', e * KCAL2MEH * 0.001)
+    if os.environ.get('TEST_SNSMP2', False):
+        for k, v in data.items():
+            core.set_variable(k, v)
     core.print_out(lines)
     core.tstop()
 

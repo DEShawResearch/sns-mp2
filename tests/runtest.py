@@ -59,6 +59,7 @@ def backtick(exelist, loghandle, pythonpath_append=None):
     the system status of the call.
     """
     env = dict(os.environ)
+    env['TEST_SNSMP2'] = '1'
     if pythonpath_append:
         env['PYTHONPATH'] = '%s:%s' % (os.environ['PYTHONPATH'], pythonpath_append)
 
