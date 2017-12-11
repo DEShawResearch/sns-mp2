@@ -164,6 +164,7 @@ def run_sns_mp2(name, molecule, **kwargs):
     core.tstart()
     e, lines = sns_mp2_model(data)
     core.set_variable('SNS-MP2 TOTAL ENERGY', e * KCAL2MEH * 0.001)
+    core.set_variable('CURRENT ENERGY', e * KCAL2MEH * 0.001)
     if os.environ.get('TEST_SNSMP2', False):
         for k, v in data.items():
             core.set_variable(k, v)
