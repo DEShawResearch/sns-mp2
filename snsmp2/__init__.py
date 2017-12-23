@@ -32,16 +32,10 @@
 
 __all__ = ['__version__']
 
-#try:
 import psi4
 import psi4.driver
 from .snsmp2 import run_sns_mp2
-print('AAAA', psi4.driver.procedures['energy'].keys())
-print('BBBB', run_sns_mp2)
 psi4.driver.procedures['energy']['sns-mp2'] = run_sns_mp2
-print('CCCC', psi4.driver.procedures['energy'].keys())
-#except ImportError:
-#    pass
 
 
 def _get_version():
@@ -49,6 +43,7 @@ def _get_version():
     resource = pkg_resources.Requirement.parse('snsmp2')
     provider = pkg_resources.get_provider(resource)
     return provider.version
+
 
 try:
     __version__ = _get_version()
