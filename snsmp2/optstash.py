@@ -78,7 +78,7 @@ class psiopts(ContextDecorator):
 
             # Integer options need to be passed as an integer type,
             # or else it fails to set and doesn't throw an error.
-            if re.match('^\d+$', v) is not None:
+            if re.match(r'^\d+$', v) is not None:
                 v = int(v)
 
             if len(k) == 1:
