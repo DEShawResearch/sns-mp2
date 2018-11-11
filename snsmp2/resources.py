@@ -65,6 +65,6 @@ def vminfo():
     with open('/proc/%s/status' % os.getpid()) as f:
         for line in f:
             if any(line.startswith(f) for f in fields):
-                m = re.match('(\w+):\s+(\d+)\skB', line)
+                m = re.match(r'(\w+):\s+(\d+)\skB', line)
                 return_value[m.group(1)] = int(m.group(2)) / 1024
     return return_value

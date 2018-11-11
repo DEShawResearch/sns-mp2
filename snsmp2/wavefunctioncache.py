@@ -40,7 +40,7 @@ from collections import namedtuple
 from psi4 import core
 from psi4.driver.procrouting.proc import run_dfmp2, run_dfmp2_gradient
 from psi4.driver.procrouting.proc import scf_helper
-from psi4.driver.molutil import constants
+from psi4.driver import psif
 from psi4 import extras
 import psi4.driver.p4util as p4util
 from .optstash import psiopts
@@ -87,7 +87,7 @@ class WavefunctionCache(object):
             'low': low,
             'high': high,
         }
-        core.IOManager.shared_object().set_specific_retention(constants.PSIF_DFSCF_BJ, True)
+        core.IOManager.shared_object().set_specific_retention(psif.PSIF_DFSCF_BJ, True)
         os.chdir(core.IOManager.shared_object().get_default_path())
 
     def __enter__(self):
@@ -97,7 +97,7 @@ class WavefunctionCache(object):
 
         for calc in (calcid(*x) for x in itertools.product(('m1', 'm2', 'd'), ('m', 'd'), ('low', 'high'))):
             core.IO.set_default_namespace(self.fmt_ns(calc))
-            core.IOManager.shared_object().set_specific_retention(constants.PSIF_DFSCF_BJ, False)
+            core.IOManager.shared_object().set_specific_retention(psif.PSIF_DFSCF_BJ, False)
         try:
             extras.clean_numpy_files()
         except OSError:
@@ -236,7 +236,7 @@ class WavefunctionCache(object):
         # type: (calcid,) -> str
         # Path to the molecular orbital file for a calc.
         fname = os.path.split(os.path.abspath(core.get_writer_file_prefix(self.fmt_ns(calc))))[1]
-        return "%s.%s.npz" % (fname, constants.PSIF_SCF_MOS)
+        return "%s.%s.npz" % (fname, psif.PSIF_SCF_MOS)
 
     def _init_addghost_C(self, oldcalc, calc):
         # print('Adding ghost %s->%s' % (oldcalc, calc))
@@ -337,7 +337,7 @@ class WavefunctionCache(object):
             for c in filter(lambda c: c in self.wfn_cache, candidates):
                 oldns = self.fmt_ns(c)
                 newns = self.fmt_ns(calc)
-                core.IO.change_file_namespace(constants.PSIF_DFSCF_BJ, oldns, newns)
+                core.IO.change_file_namespace(psif.PSIF_DFSCF_BJ, oldns, newns)
                 core.set_global_option("DF_INTS_IO", "LOAD")
         else:
             core.set_global_option("DF_INTS_IO", "NONE")

@@ -54,6 +54,6 @@ def _build_basis_funtion(name, spans):
         for span, target in spans.items():
             start, end = span.split('-')
             for z in range(int(start), int(end)+1):
-                symbol = periodictable.z2el[z]
+                symbol = periodictable.to_E(z)
                 mol.set_basis_by_symbol(symbol, str(target), role=role)
     return anon

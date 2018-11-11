@@ -33,7 +33,7 @@
 import os
 import numpy as np
 from psi4 import core
-from psi4.driver.molutil import constants
+from psi4.driver import constants
 from .wavefunctioncache import dimerize, calcid
 
 
