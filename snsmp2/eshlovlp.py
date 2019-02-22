@@ -101,7 +101,7 @@ class HeitlerLondonFunctor(object):
         # At this point, it should be the case that
         # C.T * S * C == I
         np.testing.assert_array_almost_equal(
-            core.Matrix.triplet(C, self.p.dimer_S, C, True, False, False),
+            core.triplet(C, self.p.dimer_S, C, True, False, False),
             np.eye(nocc))
 
         self.jk.C_clear()
@@ -161,7 +161,7 @@ class EletrostaticsOverlapFunctor(object):
         J_1to2 = J.np[nbf1:, nbf1:]
         elel_1to2 = 2 * np.sum(J_1to2 * mol2_wfn.Da())
         nuel_1to2 = 2 * (self.p.dimer_V.vector_dot(D1) - self.p.monomer1_V.vector_dot(mol1_wfn.Da()))
-        ovlp1 = core.Matrix.doublet(self.p.dimer_S, D1, False, False)
+        ovlp1 = core.doublet(self.p.dimer_S, D1, False, False)
 
         #######################################################################
 
@@ -189,7 +189,7 @@ class EletrostaticsOverlapFunctor(object):
         elel_2to1 = 2 * np.sum(J_2to1 * mol1_wfn.Da())
         nuel_2to1 = 2 * (self.p.dimer_V.vector_dot(D2) - self.p.monomer2_V.vector_dot(mol2_wfn.Da()))
 
-        ovlp2 = core.Matrix.doublet(self.p.dimer_S, D2, False, False)
+        ovlp2 = core.doublet(self.p.dimer_S, D2, False, False)
 
         overlap = 4 * np.sum(ovlp1.np * ovlp2.np.T)
         #assert abs(elel_1to2 - elel_2to1) < 1e-10
@@ -207,10 +207,10 @@ def orthogonalize(C, S):
     eigvals = core.Vector(nocc)
     sqrt_eigvals = core.Vector(nocc)
 
-    CTSC = core.Matrix.triplet(C, S, C, True, False, False)
+    CTSC = core.triplet(C, S, C, True, False, False)
     CTSC.diagonalize(eigenvectors, eigvals, core.DiagonalizeOrder.Ascending)
 
-    orthonormal = core.Matrix.doublet(C, eigenvectors, False, False)
+    orthonormal = core.doublet(C, eigenvectors, False, False)
 
     sqrt_eigvals.np[:] = np.sqrt(eigvals.np)
     orthonormal.np[:, :] /= sqrt_eigvals.np[np.newaxis, :]

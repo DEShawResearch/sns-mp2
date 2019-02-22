@@ -42,7 +42,7 @@ def format_intene_human(wfncache):
         d = wfncache.wfn_cache[calcid('d', 'd', basis)]
         m1 = wfncache.wfn_cache[calcid('m1', 'd', basis)]
         m2 = wfncache.wfn_cache[calcid('m2', 'd', basis)]
-        return d.get_variable(field) - (m1.get_variable(field) + m2.get_variable(field))
+        return d.variable(field) - (m1.variable(field) + m2.variable(field))
     return {
         ('DF-MP2/%s CP Interaction Energy' % wfncache.basis_sets['high']):
             interaction('MP2 TOTAL ENERGY', basis='high'),
@@ -167,26 +167,26 @@ def format_intene_dict(m1wfn, m2wfn, dwfn):
         'input': _format_input_block_dict(dwfn),
         'output': {
             'dimer': {
-                'reference_energy': dwfn.get_variable('SCF TOTAL ENERGY'),
-                'correlation_energy': dwfn.get_variable('MP2 CORRELATION ENERGY'),
-                'singlet_pair_energy': dwfn.get_variable('MP2 OPPOSITE-SPIN CORRELATION ENERGY'),
-                'triplet_pair_energy': dwfn.get_variable('MP2 SAME-SPIN CORRELATION ENERGY'),
-                'total_energy': dwfn.get_variable('MP2 TOTAL ENERGY'),
+                'reference_energy': dwfn.variable('SCF TOTAL ENERGY'),
+                'correlation_energy': dwfn.variable('MP2 CORRELATION ENERGY'),
+                'singlet_pair_energy': dwfn.variable('MP2 OPPOSITE-SPIN CORRELATION ENERGY'),
+                'triplet_pair_energy': dwfn.variable('MP2 SAME-SPIN CORRELATION ENERGY'),
+                'total_energy': dwfn.variable('MP2 TOTAL ENERGY'),
             },
             'monomers': [
                 {
-                    'reference_energy': m1wfn.get_variable('SCF TOTAL ENERGY'),
-                    'correlation_energy': m1wfn.get_variable('MP2 CORRELATION ENERGY'),
-                    'singlet_pair_energy': m1wfn.get_variable('MP2 OPPOSITE-SPIN CORRELATION ENERGY'),
-                    'triplet_pair_energy': m1wfn.get_variable('MP2 SAME-SPIN CORRELATION ENERGY'),
-                    'total_energy': m1wfn.get_variable('MP2 TOTAL ENERGY'),
+                    'reference_energy': m1wfn.variable('SCF TOTAL ENERGY'),
+                    'correlation_energy': m1wfn.variable('MP2 CORRELATION ENERGY'),
+                    'singlet_pair_energy': m1wfn.variable('MP2 OPPOSITE-SPIN CORRELATION ENERGY'),
+                    'triplet_pair_energy': m1wfn.variable('MP2 SAME-SPIN CORRELATION ENERGY'),
+                    'total_energy': m1wfn.variable('MP2 TOTAL ENERGY'),
                 },
                 {
-                    'reference_energy': m2wfn.get_variable('SCF TOTAL ENERGY'),
-                    'correlation_energy': m2wfn.get_variable('MP2 CORRELATION ENERGY'),
-                    'singlet_pair_energy': m2wfn.get_variable('MP2 OPPOSITE-SPIN CORRELATION ENERGY'),
-                    'triplet_pair_energy': m2wfn.get_variable('MP2 SAME-SPIN CORRELATION ENERGY'),
-                    'total_energy': m2wfn.get_variable('MP2 TOTAL ENERGY'),
+                    'reference_energy': m2wfn.variable('SCF TOTAL ENERGY'),
+                    'correlation_energy': m2wfn.variable('MP2 CORRELATION ENERGY'),
+                    'singlet_pair_energy': m2wfn.variable('MP2 OPPOSITE-SPIN CORRELATION ENERGY'),
+                    'triplet_pair_energy': m2wfn.variable('MP2 SAME-SPIN CORRELATION ENERGY'),
+                    'total_energy': m2wfn.variable('MP2 TOTAL ENERGY'),
                 },
             ]
         }

@@ -144,7 +144,7 @@ def run_sns_mp2(name, molecule, **kwargs):
             dimer_wfn.set_basisset("DF_BASIS_SAPT", aux_basis)
             dimer_wfn.set_basisset("DF_BASIS_ELST", aux_basis)
             core.sapt(dimer_wfn, m1mlow, m2mlow)
-            return {k: core.get_variable(k) for k in ('SAPT ELST10,R ENERGY', 'SAPT EXCH10 ENERGY',
+            return {k: core.variable(k) for k in ('SAPT ELST10,R ENERGY', 'SAPT EXCH10 ENERGY',
                     'SAPT EXCH10(S^2) ENERGY', 'SAPT IND20,R ENERGY', 'SAPT EXCH-IND20,R ENERGY',
                     'SAPT EXCH-DISP20 ENERGY', 'SAPT DISP20 ENERGY', 'SAPT SAME-SPIN EXCH-DISP20 ENERGY',
                     'SAPT SAME-SPIN DISP20 ENERGY', 'SAPT HF TOTAL ENERGY',
