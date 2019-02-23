@@ -172,7 +172,6 @@ class WavefunctionCache(object):
         new_wfn = self._basis_projection(oldcalc, calc)
         newfn = self._fmt_mo_fn(calc)
 
-        #np.savez(newfn, **new_data)
         new_wfn.to_file(newfn)
 
         psi_scratch = core.IOManager.shared_object().get_default_path()
@@ -185,9 +184,7 @@ class WavefunctionCache(object):
         assert (oldcalc.B, oldcalc.Z) != (newcalc.B, newcalc.Z)
 
         read_filename = self._fmt_mo_fn(oldcalc)
-
         old_wfn = core.Wavefunction.from_file(read_filename)
-
         Ca_occ = old_wfn.Ca_subset('SO','OCC') 
         Cb_occ = old_wfn.Cb_subset('SO','OCC') 
         puream = old_wfn.basisset().has_puream()
@@ -297,10 +294,8 @@ class WavefunctionCache(object):
 
         m1_C_fn = self._fmt_mo_fn(oldcalc_m1)
         m2_C_fn = self._fmt_mo_fn(oldcalc_m2)
-
         m1_wfn = core.Wavefunction.from_file(m1_C_fn)
         m2_wfn = core.Wavefunction.from_file(m2_C_fn)
-
         m1_Ca_occ = m1_wfn.Ca_subset('SO', 'OCC')  
         m1_Cb_occ = m1_wfn.Cb_subset('SO', 'OCC') 
         m2_Ca_occ = m2_wfn.Ca_subset('SO', 'OCC') 
@@ -310,14 +305,13 @@ class WavefunctionCache(object):
         m2_nso, m2_nalpha = m2_Ca_occ.shape
         m1_nbeta = m1_Cb_occ.shape[1]
         m2_nbeta = m2_Cb_occ.shape[1]
-        assert m1_nso == m2_nso
-
         d_nalpha = m1_nalpha + m2_nalpha
         d_nbeta = m1_nbeta + m2_nbeta
+        assert m1_nso == m2_nso
 
         Ca_d = core.Matrix('Ca', (m1_nso), (m1_nso))
         Cb_d = core.Matrix('Cb', (m1_nso), (m1_nso))
-             
+
         Ca_d.np[:, :m1_nalpha] = m1_Ca_occ.np[:, :]
         Ca_d.np[:, m1_nalpha:d_nalpha] = m2_Ca_occ.np[:, :]
              
