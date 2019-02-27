@@ -34,6 +34,7 @@
 import os
 import itertools
 import json
+from pkg_resources import parse_version
 import psi4
 from psi4 import core
 import psi4.driver.p4util as p4util
@@ -54,6 +55,9 @@ def run_sns_mp2(name, molecule, **kwargs):
     """
     if len(kwargs) > 0:
         core.print_out('Unrecognized options: %s' % str(kwargs))
+
+    if parse_version(psi4.__version__) < parse_version('1.3rc2') :
+        raise ImportError('Psi4 {:s} is not compatible (v1.3+ necessary)'.format(psi4.__version__))
 
     # Force to c1
     molecule = molecule.clone()

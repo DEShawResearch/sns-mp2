@@ -34,11 +34,6 @@ __all__ = ['__version__']
 
 import psi4
 import psi4.driver
-
-from pkg_resources import parse_version
-if parse_version(psi4.__version__) < parse_version('1.3rc2'):
-    raise ImportError('Psi4 {:s} is not compatible (v1.3+ necessary)'.format(psi4.__version__))
-
 from .snsmp2 import run_sns_mp2
 psi4.driver.procedures['energy']['sns-mp2'] = run_sns_mp2
 
