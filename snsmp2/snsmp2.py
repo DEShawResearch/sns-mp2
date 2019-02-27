@@ -54,10 +54,10 @@ def run_sns_mp2(name, molecule, **kwargs):
     """Run the SNS-MP2 calculation
     """
     if len(kwargs) > 0:
-        raise ValueError('Unrecognized options: %s' % str(kwargs))
+        core.print_out('Unrecognized options: %s' % str(kwargs))
 
     if parse_version(psi4.__version__) < parse_version('1.3rc2') :
-        raise ValueError('Psi4 {:s} is not compatible (v1.3+ necessary)'.format(psi4.__version__))
+        raise ImportError('Psi4 {:s} is not compatible (v1.3+ necessary)'.format(psi4.__version__))
 
     # Force to c1
     molecule = molecule.clone()
