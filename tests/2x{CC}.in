@@ -29,10 +29,10 @@ no_reorient
 
 energy('sns-mp2')
 
-compare_values( 2.57199e-02, get_variable('DF-HF/desavqz-psi-rev1 Density Matrix Overlap'),            6, "ovlhf")
-compare_values(-1.07132e-03, get_variable('DF-HF/desavqz-psi-rev1 Electrostatic Interaction Energy'),  6, "eshf")
-compare_values( 2.55943e-03, get_variable('DF-HF/desavqz-psi-rev1 Heitler-London Energy'),             6, "hl")
-compare_values( 2.82251e-02, get_variable('DF-MP2/desavqz-psi-rev1 Density Matrix Overlap'),           6, "ovlmp")
-compare_values(-1.22020e-03, get_variable('DF-MP2/desavqz-psi-rev1 Electrostatic Interaction Energy'), 6, "esmp")
-compare_values( 2.25913e-03, get_variable('DF-HF/desavqz-psi-rev1 CP Interaction Energy'),             5, "inthf")
-compare_values(-2.14025e-03, get_variable('DF-MP2/desavqz-psi-rev1 CP Interaction Energy'),            5, "intmp")
+compare_values( 2.57199e-02, variable('DF-HF/desavqz Density Matrix Overlap'),            6, "ovlhf")
+compare_values(-1.07132e-03, variable('DF-HF/desavqz Electrostatic Interaction Energy'),  6, "eshf")
+compare_values( 2.55943e-03, variable('DF-HF/desavqz Heitler-London Energy'),             6, "hl")
+compare_values( 2.82251e-02, variable('DF-MP2/desavqz Density Matrix Overlap'),           6, "ovlmp")
+compare_values(-1.22020e-03, variable('DF-MP2/desavqz Electrostatic Interaction Energy'), 6, "esmp")
+compare_values( 2.25913e-03, variable('DF-HF/desavqz CP Interaction Energy'),             5, "inthf")
+compare_values(-2.14025e-03, variable('DF-MP2/desavqz CP Interaction Energy'),            5, "intmp")
