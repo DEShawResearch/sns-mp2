@@ -153,14 +153,14 @@ def run_sns_mp2(name, molecule, **kwargs):
                     'SAPT EXCH10(S^2) ENERGY', 'SAPT IND20,R ENERGY', 'SAPT EXCH-IND20,R ENERGY',
                     'SAPT EXCH-DISP20 ENERGY', 'SAPT DISP20 ENERGY', 'SAPT SAME-SPIN EXCH-DISP20 ENERGY',
                     'SAPT SAME-SPIN DISP20 ENERGY', 'SAPT HF TOTAL ENERGY',
-            )}
+            )}, dimer_wfn
 
         ###################################################################
 
 
         # Run the three previously defined functions
         espx_data, dimer_high_basis = run_espx()
-        sapt_data = run_sapt()
+        sapt_data, sapt_wfn = run_sapt()
 
     data = format_espx_human(HIGH, espx_data)
     data.update(sapt_data)
@@ -168,12 +168,15 @@ def run_sns_mp2(name, molecule, **kwargs):
 
     core.tstart()
     e, lines = sns_mp2_model(data)
+    sapt_wfn.set_variable("SNS-MP2 TOTAL ENERGY", e * KCAL2MEH * 0.001)
+    sapt_wfn.set_energy(e * KCAL2MEH * 0.001)
     core.set_variable('SNS-MP2 TOTAL ENERGY', e * KCAL2MEH * 0.001)
     core.set_variable('CURRENT ENERGY', e * KCAL2MEH * 0.001)
     if os.environ.get('TEST_SNSMP2', False):
         for k, v in data.items():
+            sapt_wfn.set_variable(k, v)
             core.set_variable(k, v)
     core.print_out(lines)
     core.tstop()
 
-    return e
+    return sapt_wfn
