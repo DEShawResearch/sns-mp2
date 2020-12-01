@@ -19,21 +19,21 @@
   },
   "desavtz-jkfit":{  
     "1-1":"aug-cc-pVTZ-JKFIT",
-    "2-2":"def2-QZVPP-JKFIT",
-    "3-4":"def2-QZVPP-JKFIT",
+    "2-2":"def2-UNIVERSAL-JKFIT",
+    "3-4":"def2-UNIVERSAL-JKFIT",
     "5-10":"aug-cc-pVTZ-JKFIT",
-    "11-12":"def2-QZVPP-JKFIT",
+    "11-12":"def2-UNIVERSAL-JKFIT",
     "13-18":"aug-cc-pVTZ-JKFIT",
-    "19-28":"def2-QZVPP-JKFIT"
+    "19-28":"def2-UNIVERSAL-JKFIT"
   },
   "desavqz-jkfit":{  
     "1-1":"aug-cc-pVQZ-JKFIT",
-    "2-2":"def2-QZVPP-JKFIT",
-    "3-4":"def2-QZVPP-JKFIT",
+    "2-2":"def2-UNIVERSAL-JKFIT",
+    "3-4":"def2-UNIVERSAL-JKFIT",
     "5-10":"aug-cc-pVQZ-JKFIT",
-    "11-12":"def2-QZVPP-JKFIT",
+    "11-12":"def2-UNIVERSAL-JKFIT",
     "13-18":"aug-cc-pVQZ-JKFIT",
-    "19-28":"def2-QZVPP-JKFIT"
+    "19-28":"def2-UNIVERSAL-JKFIT"
   },
   "desavtz-ri":{  
     "1-2":"aug-cc-pVTZ-ri",
