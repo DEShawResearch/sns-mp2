@@ -34,7 +34,7 @@
 import os
 import itertools
 import json
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 import psi4
 from psi4 import core
 import psi4.driver.p4util as p4util
@@ -56,8 +56,8 @@ def run_sns_mp2(name, molecule, **kwargs):
     if len(kwargs) > 0:
         core.print_out('Unrecognized options: %s' % str(kwargs))
 
-    if parse_version(psi4.__version__) < parse_version('1.3rc2') :
-        raise ImportError('Psi4 {:s} is not compatible (v1.3+ necessary)'.format(psi4.__version__))
+    if parse_version(psi4.__version__) < parse_version('1.10') :
+        raise ImportError('Psi4 {:s} is not compatible (v1.10+ necessary)'.format(psi4.__version__))
 
     # Force to c1
     molecule = molecule.clone()
@@ -92,7 +92,7 @@ def run_sns_mp2(name, molecule, **kwargs):
             'BASIS %s' % HIGH,
             'DF_BASIS_SCF %s-jkfit' % HIGH,
             'DF_BASIS_MP2 %s-ri' % HIGH,
-            'DF_INTS_IO LOAD',
+#            'DF_INTS_IO LOAD',
         )
         def run_espx():
             core.tstart()
@@ -130,8 +130,8 @@ def run_sns_mp2(name, molecule, **kwargs):
 
         @psiopts(
             'SAPT SAPT_LEVEL SAPT0',
-            'SAPT E_CONVERGENCE 10e-10',
-            'SAPT D_CONVERGENCE 10e-10',
+            'E_CONVERGENCE 10e-10',
+            'D_CONVERGENCE 10e-10',
             'SAPT NAT_ORBS_T2 TRUE',
             'SCF_TYPE DF',
             'BASIS %s' % LOW,
