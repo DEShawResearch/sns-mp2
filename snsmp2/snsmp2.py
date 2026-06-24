@@ -92,7 +92,7 @@ def run_sns_mp2(name, molecule, **kwargs):
             'BASIS %s' % HIGH,
             'DF_BASIS_SCF %s-jkfit' % HIGH,
             'DF_BASIS_MP2 %s-ri' % HIGH,
-            'DF_INTS_IO LOAD',
+#            'DF_INTS_IO LOAD',
         )
         def run_espx():
             core.tstart()
