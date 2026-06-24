@@ -130,8 +130,8 @@ def run_sns_mp2(name, molecule, **kwargs):
 
         @psiopts(
             'SAPT SAPT_LEVEL SAPT0',
-            'SAPT E_CONVERGENCE 10e-10',
-            'SAPT D_CONVERGENCE 10e-10',
+            'E_CONVERGENCE 10e-10',
+            'D_CONVERGENCE 10e-10',
             'SAPT NAT_ORBS_T2 TRUE',
             'SCF_TYPE DF',
             'BASIS %s' % LOW,
