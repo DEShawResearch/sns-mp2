@@ -36,7 +36,7 @@ import os.path
 
 from psi4.driver import qcdb
 from psi4 import core
-from psi4.driver.qcdb import periodictable
+import qcelemental as qcel
 
 
 def inject_desres_basis():
@@ -54,6 +54,6 @@ def _build_basis_funtion(name, spans):
         for span, target in spans.items():
             start, end = span.split('-')
             for z in range(int(start), int(end)+1):
-                symbol = periodictable.to_E(z)
+                symbol = qcel.periodictable.to_E(z)
                 mol.set_basis_by_symbol(symbol, str(target), role=role)
     return anon
